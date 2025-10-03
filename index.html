@@ -93,7 +93,7 @@
     updateTitleClock();
   </script>
 
-  <!-- Weather Script (Fixed and Improved) -->
+  <!-- Weather Script (Accurate hourly forecast fix) -->
   <script>
     const weatherBtn = document.getElementById('weather-btn');
     const weatherCodeToEmoji = {
@@ -111,24 +111,29 @@
         const res = await fetch(url);
         const data = await res.json();
 
-        // Current
+        // Current Weather
         const current = data.current_weather;
         const currentEmoji = weatherCodeToEmoji[current.weathercode] || "❓";
         weatherBtn.textContent = currentEmoji;
         document.getElementById('weather-current').innerHTML = `${currentEmoji} <strong>${current.temperature.toFixed(1)}°F</strong><br>💨 Wind: ${current.windspeed.toFixed(1)} mph<br>🧭 Direction: ${current.winddirection}°`;
 
-        // Hourly
+        // Hourly Forecast — NEXT 6 HOURS based on local time
         const hourlyHTML = [];
-        for (let i = 0; i < 6; i++) {
-          const time = new Date(data.hourly.time[i]).toLocaleTimeString([], { hour: 'numeric', hour12: true });
-          const temp = data.hourly.temperature_2m[i];
-          const code = data.hourly.weathercode[i];
-          const emoji = weatherCodeToEmoji[code] || "❓";
-          hourlyHTML.push(`${time}: ${emoji} ${temp.toFixed(1)}°F`);
+        const now = new Date();
+        for (let i = 0, count = 0; i < data.hourly.time.length && count < 6; i++) {
+          const time = new Date(data.hourly.time[i]);
+          if (time > now) {
+            const timeStr = time.toLocaleTimeString([], { hour: 'numeric', hour12: true });
+            const temp = data.hourly.temperature_2m[i];
+            const code = data.hourly.weathercode[i];
+            const emoji = weatherCodeToEmoji[code] || "❓";
+            hourlyHTML.push(`${timeStr}: ${emoji} ${temp.toFixed(1)}°F`);
+            count++;
+          }
         }
         document.getElementById('weather-hourly').innerHTML = `<strong>Next 6 Hours</strong><br>${hourlyHTML.join('<br>')}`;
 
-        // Daily
+        // Daily Forecast (Next 3 Days)
         const dailyHTML = [];
         for (let i = 0; i < 3; i++) {
           const date = new Date(data.daily.time[i]).toLocaleDateString(undefined, { weekday: 'short' });
@@ -136,7 +141,7 @@
           const tMax = data.daily.temperature_2m_max[i];
           const code = data.daily.weathercode[i];
           const emoji = weatherCodeToEmoji[code] || "❓";
-          dailyHTML.push(`${date}: ${emoji} ${tMin.toFixed(0)}–${tMax.toFixed(0)}°F`);
+          dailyHTML.push(`${date}: ${emoji} ${Math.round(tMin)}–${Math.round(tMax)}°F`);
         }
         document.getElementById('weather-daily').innerHTML = `<strong>Next 3 Days</strong><br>${dailyHTML.join('<br>')}`;
       } catch (err) {
@@ -167,7 +172,7 @@
     });
   </script>
 
-  <!-- CSS (Minimal inline styles for weather UI) -->
+  <!-- Minimal inline CSS -->
   <style>
     #digital-clock { display: none; position: fixed; top: 10px; right: 10px; background: black; color: white; font-family: 'Pacifico', monospace; font-size: 14px; padding: 5px 10px; border-radius: 5px; z-index: 9999; pointer-events: none; }
     #weather-btn { position: fixed; bottom: 20px; right: 20px; font-size: 2em; cursor: pointer; z-index: 1000; }
