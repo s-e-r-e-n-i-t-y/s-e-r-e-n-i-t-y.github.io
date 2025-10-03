@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>💗 Serenity now... Insanity later</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+  <link href="css/style.css" rel="stylesheet" type="text/css">
+  <link href="https://fonts.googleapis.com/css?family=Pacifico" rel="stylesheet">
+</head>
+<body>
+  <div id="digital-clock">00:00:00</div>
+  <div id="weather-btn">⛅</div>
+  <div id="weather-info">
+    <div id="weather-current">Loading current weather...</div>
+    <hr>
+    <div id="weather-hourly"><strong>Hourly Forecast</strong><br>Loading...</div>
+    <hr>
+    <div id="weather-daily"><strong>Daily Forecast</strong><br>Loading...</div>
+  </div>
+  <div class="webgl"></div>
+  <div class="over">
+    <img src="hoot.png" alt="Hoot" style="position: fixed; bottom: 10px; left: 10px; width: 50px; height: auto; opacity: 0.9; z-index: 9999; pointer-events: none;" />
+    <h1>serenity now</h1>
+    <div id="emoji-target"></div>
+    <div class="links">
+      <a href="https://www.mixcloud.com/serenityn0w/" target="_blank" rel="noopener noreferrer">Mixcloud</a>
+      <a href="https://www.bandlab.com/serenity_now" target="_blank" rel="noopener noreferrer">BandLab</a>
+      <a href="https://psytrance.carrd.co/" target="_blank" rel="noopener noreferrer">Carrd Site</a>
+      <a href="https://www.bandlab.com/track/ac9e6618-4a71-f011-b480-000d3aa44c65?revId=aa9e6618-4a71-f011-b480-000d3aa44c65" target="_blank" rel="noopener noreferrer">Latest Track: 2025-08-05 Serenity Now - Toxic Material Detected! (toxic mix)</a> mix:
+    </div>
+    <div class="btn-container">
+      <div class="big-btn">Seriously?</div>
+    </div>
+  </div>
+
+  <!-- Libraries -->
+  <script src="lib/three.min.js"></script>
+  <script src="lib/stats.min.js"></script>
+  <script src="lib/SimplexNoise.js"></script>
+  <script src="lib/minivents.min.js"></script>
+  <script src="lib/TweenMax.min.js"></script>
+  <script src="lib/OrbitControls.js"></script>
+  <script src="lib/dat.gui.min.js"></script>
+  <script src="lib/atutil.js"></script>
+  <script src="lib/seedrandom.js"></script>
+  <script src="lib/three/postprocessing/EffectComposer.js"></script>
+  <script src="lib/three/postprocessing/RenderPass.js"></script>
+  <script src="lib/three/postprocessing/MaskPass.js"></script>
+  <script src="lib/three/postprocessing/ShaderPass.js"></script>
+  <script src="lib/three/shaders/FXAAShader.js"></script>
+  <script src="lib/three/shaders/CopyShader.js"></script>
+  <script src="lib/three/shaders/VignetteShader.js"></script>
+  <script src="js/SuperShader.js"></script>
+  <script src="js/TiltShiftShader.js"></script>
+  <script src="js/NoiseShader.js"></script>
+  <script src="js/SpaceShader.js"></script>
+  <script src="js/CustomRGBShiftShader.js"></script>
+  <script src="js/StarShader.js"></script>
+  <script src="js/Stars.js"></script>
+  <script src="js/Confetti.js"></script>
+  <script src="js/Ribbon.js"></script>
+  <script src="js/main.js"></script>
+
+  <!-- UI Text & Clock -->
+  <script>
+    const messages = ["What","Why","Now","Really","Again","Seriously","Wait","Huh","Uh...","Nope","This?","That?","How","Who","Where","When","Which","Maybe","Oops","Bruh","Yo","Help","Pls","IDK","Hm","Wut","Meh","Ehh","Sigh","Fine","Ok","lol","what even","is this","don’t","not again","stop","more?","why tho"];
+    const punctuations = ["?","!","...","?!","!?","??","‽"];
+    const btn = document.querySelector(".big-btn");
+    if (btn) { const message = messages[Math.floor(Math.random() * messages.length)]; const punct = punctuations[Math.floor(Math.random() * punctuations.length)]; btn.textContent = message + punct; }
+  </script>
+  <script>
+    function getRandomEmoji() {
+      const ranges = [[0x1F600,0x1F64F],[0x1F300,0x1F5FF],[0x1F680,0x1F6FF],[0x2600,0x26FF],[0x2700,0x27BF]];
+      const range = ranges[Math.floor(Math.random() * ranges.length)];
+      const codePoint = Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0];
+      return String.fromCodePoint(codePoint);
+    }
+    function getRandomEmojis(count = 4) {
+      let emojis = ''; for (let i = 0; i < count; i++) emojis += getRandomEmoji() + ' '; return emojis.trim();
+    }
+    window.addEventListener('DOMContentLoaded', () => {
+      const p = document.getElementById('emoji-target'); const emojis = getRandomEmojis(4); p.textContent = `${emojis} insanity later`;
+    });
+  </script>
+  <script>
+    function updateClock() {
+      const now = new Date(); let hours = now.getHours(); const minutes = now.getMinutes().toString().padStart(2, '0'); const seconds = now.getSeconds().toString().padStart(2, '0'); hours = hours % 12 || 12; const timeString = `${hours}:${minutes}:${seconds}`; document.getElementById('digital-clock').textContent = timeString;
+    }
+    setInterval(updateClock, 1000); updateClock();
+    window.addEventListener("load", () => {
+      setTimeout(() => {
+        document.querySelector(".over").style.display = "none"; document.getElementById("weather-btn").style.display = "none";
+      }, 60000);
+    });
+  </script>
+  <script>
+    function updateTitleClock() {
+      const now = new Date(); let hours = now.getHours() % 12 || 12; const minutes = now.getMinutes().toString().padStart(2, '0'); const timeString = `${hours}:${minutes}`; const originalTitle = document.title.replace(/^\d{1,2}:\d{2} /, ''); document.title = `${timeString} ${originalTitle}`;
+    }
+    setInterval(updateTitleClock, 30000); updateTitleClock();
+  </script>
+
+  <!-- Weather Script -->
+  <script>
+    const weatherBtn = document.getElementById('weather-btn');
+    const weatherCodeToEmoji = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",56:"🌧️",57:"🌧️",61:"🌦️",63:"🌧️",65:"🌧️",66:"🌧️",67:"🌧️",71:"❄️",73:"❄️",75:"❄️",77:"🌨️",80:"🌧️",81:"🌧️",82:"🌧️",85:"❄️",86:"❄️",95:"⛈️",96:"⛈️",99:"⛈️"};
+    async function getWeather(lat, lon) {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph&hourly=temperature_2m,weathercode&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`;
+      try {
+        const res = await fetch(url); const data = await res.json();
+        const current = data.current_weather;
+        const currentEmoji = weatherCodeToEmoji[current.weathercode] || "❓";
+        weatherBtn.textContent = currentEmoji;
+        document.getElementById('weather-current').innerHTML = `${currentEmoji} <strong>${current.temperature}°F</strong><br>💨 Wind: ${current.windspeed} mph<br>🧭 Direction: ${current.winddirection}°`;
+        const hourlyHTML = []; for (let i = 0; i < 6; i++) { const time = new Date(data.hourly.time[i]).toLocaleTimeString([], { hour: 'numeric' }); const temp = data.hourly.temperature_2m[i]; const code = data.hourly.weathercode[i]; const emoji = weatherCodeToEmoji[code] || "❓"; hourlyHTML.push(`${time}: ${emoji} ${temp}°F`); }
+        document.getElementById('weather-hourly').innerHTML = `<strong>Next 6 Hours</strong><br>${hourlyHTML.join('<br>')}`;
+        const dailyHTML = []; for (let i = 0; i < 3; i++) { const date = new Date(data.daily.time[i]).toLocaleDateString(undefined, { weekday: 'short' }); const tMin = data.daily.temperature_2m_min[i]; const tMax = data.daily.temperature_2m_max[i]; const code = data.daily.weathercode[i]; const emoji = weatherCodeToEmoji[code] || "❓"; dailyHTML.push(`${date}: ${emoji} ${tMin}–${tMax}°F`); }
+        document.getElementById('weather-daily').innerHTML = `<strong>Next 3 Days</strong><br>${dailyHTML.join('<br>')}`;
+      } catch (err) {
+        console.error(err);
+        document.getElementById('weather-current').textContent = '⚠️ Failed to get weather.';
+      }
+    }
+    function fetchAndStoreLocation() {
+      document.getElementById('weather-current').textContent = 'Requesting location...';
+      navigator.geolocation.getCurrentPosition((position) => {
+        const { latitude, longitude } = position.coords;
+        localStorage.setItem("weather_lat", latitude); localStorage.setItem("weather_lon", longitude); getWeather(latitude, longitude);
+      }, (error) => {
+        console.error(error); document.getElementById('weather-current').textContent = '❌ Geolocation error.';
+      });
+    }
+    weatherBtn.addEventListener('click', () => {
+      document.getElementById('weather-info').style.display = 'block';
+      const lat = localStorage.getItem("weather_lat");
+      const lon = localStorage.getItem("weather_lon");
+      if (lat && lon) getWeather(lat, lon); else fetchAndStoreLocation();
+    });
+  </script>
+
+  <!-- CSS (One-liner at bottom) -->
+  <style>
+    #digital-clock { display: none; position: fixed; top: 10px; right: 10px; background: black; color: white; font-family: 'Pacifico', monospace; font-size: 14px; padding: 5px 10px; border-radius: 5px; z-index: 9999; pointer-events: none; }
+    #weather-btn { position: fixed; bottom: 20px; right: 20px; font-size: 2em; cursor: pointer; z-index: 1000; }
+    #weather-info { position: fixed; bottom: 60px; right: 20px; background: white; padding: 10px; border: 1px solid #ccc; border-radius: 8px; display: none; font-family: sans-serif; font-size: 0.9em; z-index: 1000; max-width: 250px; }
+    #weather-info hr { border: none; border-top: 1px solid #ccc; margin: 6px 0; }
+  </style>
+</body>
+</html>
