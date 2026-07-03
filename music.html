@@ -1,0 +1,63 @@
+---
+layout: default
+title: My Music Directory
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page.title }}</title>
+    <style>
+        .music-list {
+            list-style-type: none;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+        }
+        .music-item {
+            padding: 12px;
+            margin-bottom: 6px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            border-left: 4px solid #1db954; /* Spotify green accent */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .music-link {
+            color: #333;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .music-link:hover {
+            color: #1db954;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>{{ page.title }}</h1>
+    <p>Tracks found in the <code>my-music/</code> folder:</p>
+
+    <!-- 1. Filters files specifically inside the my-music directory -->
+    {% assign tracks = site.static_files | where_exp: "file", "file.path contains '/my-music/'" %}
+
+    <ul class="music-list">
+      <!-- 2. Loops through your music files -->
+      {% for track in tracks %}
+        <li class="music-item">
+          <!-- 3. Outputs the file name and sets up the link -->
+          <a class="music-link" href="{{ track.path | relative_url }}">
+            {{ track.name }}
+          </a>
+        </li>
+      {% else %}
+        <!-- Fallback if the folder is empty or not tracked yet -->
+        <li>No audio files found. Make sure files are uploaded to the <code>my-music/</code> directory.</li>
+      {% endfor %}
+    </ul>
+
+</body>
+</html>
