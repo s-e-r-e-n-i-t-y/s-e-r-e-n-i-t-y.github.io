@@ -9,55 +9,106 @@ title: My Music Directory
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page.title }}</title>
+
     <style>
-        .music-list {
-            list-style-type: none;
-            padding: 0;
+        body {
             font-family: Arial, sans-serif;
-            max-width: 600px;
+            background: #fafafa;
         }
+
+        h1 {
+            margin-bottom: 4px;
+        }
+
+        .music-list {
+            list-style: none;
+            padding: 0;
+            max-width: 900px;
+            margin: 20px 0;
+        }
+
         .music-item {
-            padding: 12px;
-            margin-bottom: 6px;
-            background-color: #f9f9f9;
-            border-radius: 4px;
-            border-left: 4px solid #1db954; /* Spotify green accent */
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+
+            padding: 12px 14px;
+            margin-bottom: 10px;
+
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #e8e8e8;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
         }
-        .music-link {
-            color: #333;
+
+        .music-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .track-name {
+            flex: 1;
+            font-weight: 600;
+            color: #222;
             text-decoration: none;
-            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .music-link:hover {
+
+        .track-name:hover {
             color: #1db954;
+        }
+
+        audio {
+            width: 280px;
+            max-width: 40%;
+            outline: none;
+        }
+
+        @media (max-width: 600px) {
+            .music-item {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            audio {
+                width: 100%;
+                max-width: 100%;
+            }
         }
     </style>
 </head>
+
 <body>
 
-    <h1>{{ page.title }}</h1>
-    <p>Tracks found in the <code>my-music/</code> folder:</p>
+<h1>{{ page.title }}</h1>
+<p>Tracks found in <code>my-music/</code> folder:</p>
 
-    <!-- 1. Filters files specifically inside the my-music directory -->
-    {% assign tracks = site.static_files | where_exp: "file", "file.path contains '/my-music/'" %}
+{% assign tracks = site.static_files | where_exp: "file", "file.path contains '/my-music/'" %}
 
-    <ul class="music-list">
-      <!-- 2. Loops through your music files -->
-      {% for track in tracks %}
+<ul class="music-list">
+    {% for track in tracks %}
         <li class="music-item">
-          <!-- 3. Outputs the file name and sets up the link -->
-          <a class="music-link" href="{{ track.path | relative_url }}">
-            {{ track.name }}
-          </a>
+
+            <!-- clickable file name -->
+            <a class="track-name" href="{{ track.path | relative_url }}">
+                {{ track.name }}
+            </a>
+
+            <!-- inline player -->
+            <audio controls preload="none">
+                <source src="{{ track.path | relative_url }}" type="audio/mpeg">
+                Your browser does not support audio playback.
+            </audio>
+
         </li>
-      {% else %}
-        <!-- Fallback if the folder is empty or not tracked yet -->
-        <li>No audio files found. Make sure files are uploaded to the <code>my-music/</code> directory.</li>
-      {% endfor %}
-    </ul>
+    {% else %}
+        <li>No audio files found in <code>my-music/</code>.</li>
+    {% endfor %}
+</ul>
 
 </body>
 </html>
