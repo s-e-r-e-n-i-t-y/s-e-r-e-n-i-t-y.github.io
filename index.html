@@ -44,7 +44,7 @@ title: "Serenity now... Insanity later"
           <ul class="music-list">
             {% for track in tracks %}
               <li class="music-item">
-                <a class="track-name" href="{{ track.path | relative_url }}">{{ track.name }}</a>
+                <span class="track-name">{{ track.name }}</span>
                 <audio controls preload="none">
                   <source src="{{ track.path | relative_url }}" type="audio/mpeg">
                 </audio>
@@ -62,7 +62,7 @@ title: "Serenity now... Insanity later"
           <ul class="music-list">
             {% for track in mash_tracks %}
               <li class="music-item">
-                <a class="track-name" href="{{ track.path | relative_url }}">{{ track.name }}</a>
+                <span class="track-name">{{ track.name }}</span>
                 <video controls preload="none">
                   <source src="{{ track.path | relative_url }}" type="video/mp4">
                 </video>
@@ -77,48 +77,10 @@ title: "Serenity now... Insanity later"
   </div>
 
   <div class="webgl"></div>
-  <div class="over">
-    <img src="hoot.png" alt="Hoot" style="position: fixed; bottom: 10px; left: 10px; width: 50px; height: auto; opacity: 0.9; z-index: 9999; pointer-events: none;" />
-    <h1>serenity now</h1>
-    <div id="emoji-target"></div>
-    <div class="btn-container">
-      <div class="big-btn">Seriously?</div>
-    </div>
-  </div>
 
   <!-- Combined Script Imports on One Line -->
-  <script src="lib/three.min.js"></script><script src="lib/stats.min.js"></script><script src="lib/SimplexNoise.js"></script><script src="lib/minivents.min.js"></script><script src="lib/TweenMax.min.js"></script><script src="lib/OrbitControls.js"></script><script src="lib/dat.gui.min.js"></script><script src="lib/atutil.js"></script><script src="lib/seedrandom.js"></script><script src="lib/three/postprocessing/EffectComposer.js"></script><script src="lib/three/postprocessing/RenderPass.js"></script><script src="lib/three/postprocessing/MaskPass.js"></script><script src="lib/three/postprocessing/ShaderPass.js"></script><script src="lib/three/shaders/FXAAShader.js"></script><script src="lib/three/shaders/CopyShader.js"></script><script src="lib/three/shaders/VignetteShader.js"></script><script src="js/SuperShader.js"></script><script src="js/TiltShiftShader.js"></script><script src="js/NoiseShader.js"></script><script src="js/SpaceShader.js"></script><script src="js/CustomRGBShiftShader.js"></script><script src="js/StarShader.js"></script><script src="js/Stars.js"></script><script src="js/Confetti.js"></script><script src="js/Ribbon.js"></script><script src="js/main.js"></script>
-
-  <!-- UI Text & Clock -->
+  <script src="lib/three.min.js"></script><script src="lib/stats.min.js"></script><script src="lib/SimplexNoise.js"></script><script src="lib/minivents.min.js"></script><script src="lib/TweenMax.min.js"></script><script src="lib/OrbitControls.js"></script><script src="lib/dat.gui.min.js"></script><script src="lib/atutil.js"></script><script src="lib/seedrandom.js"></script><script src="lib/three/postprocessing/EffectComposer.js"></script><script src="lib/three/postprocessing/RenderPass.js"></script><script src="lib/three/postprocessing/MaskPass.js"></script><script src="lib/three/postprocessing/ShaderPass.js"></script><script src="lib/three/shaders/FXAAShader.js"></script><script src="lib/three/shaders/CopyShader.js"></script><script src="lib/three/shaders/VignetteShader.js"></script><script src="js/SuperShader.js"></script><script src="js/TiltShiftShader.js"></script><script src="js/NoiseShader.js"></script><script src="js/SpaceShader.js"></script><script src="js/CustomRGBShiftShader.js"></script><script src="js/StarShader.js"></script><script src="js/Stars.js"></script><script src="js/Confetti.js"></script><script src="js/Ribbon.js"></script><script src="js/main.js"></script>  <!-- Clock -->
   <script>
-    const messages = ["What","Why","Now","Really","Again","Seriously","Wait","Huh","Uh...","Nope","This?","That?","How","Who","Where","When","Which","Maybe","Oops","Bruh","Yo","Help","Pls","IDK","Hm","Wut","Meh","Ehh","Sigh","Fine","Ok","lol","what even","is this","don't","not again","stop","more?","why tho"];
-    const punctuations = ["?","!","...","?!","!??","??","‽"];
-    const btn = document.querySelector(".big-btn");
-    if (btn) {
-      const message = messages[Math.floor(Math.random() * messages.length)];
-      const punct = punctuations[Math.floor(Math.random() * punctuations.length)];
-      btn.textContent = message + punct;
-    }
-
-    function getRandomEmoji() {
-      const ranges = [[0x1F600,0x1F64F],[0x1F300,0x1F5FF],[0x1F680,0x1F6FF],[0x2600,0x26FF],[0x2700,0x27BF]];
-      const range = ranges[Math.floor(Math.random() * ranges.length)];
-      const codePoint = Math.floor(Math.random() * (range[1] - range[0] + 1)) + range[0];
-      return String.fromCodePoint(codePoint);
-    }
-
-    function getRandomEmojis(count = 4) {
-      let emojis = '';
-      for (let i = 0; i < count; i++) emojis += getRandomEmoji() + ' ';
-      return emojis.trim();
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      const p = document.getElementById('emoji-target');
-      const emojis = getRandomEmojis(4);
-      p.textContent = `${emojis} insanity later`;
-    });
-
     function updateClock() {
       const now = new Date();
       let hours = now.getHours();
@@ -128,28 +90,8 @@ title: "Serenity now... Insanity later"
       const timeString = `${hours}:${minutes}:${seconds}`;
       document.getElementById('digital-clock').textContent = timeString;
     }
-
     setInterval(updateClock, 1000);
     updateClock();
-
-    window.addEventListener("load", () => {
-      setTimeout(() => {
-        document.querySelector(".over").style.display = "none";
-        document.getElementById("weather-btn").style.display = "none";
-      }, 60000);
-    });
-
-    function updateTitleClock() {
-      const now = new Date();
-      let hours = now.getHours() % 12 || 12;
-      const minutes = now.getMinutes().toString().padStart(2, '0');
-      const timeString = `${hours}:${minutes}`;
-      const originalTitle = document.title.replace(/^\d{1,2}:\d{2} /, '');
-      document.title = `${timeString} ${originalTitle}`;
-    }
-
-    setInterval(updateTitleClock, 30000);
-    updateTitleClock();
   </script>
 
   <!-- Music Panel Script -->
@@ -279,21 +221,20 @@ title: "Serenity now... Insanity later"
     /* Music Panel */
     #music-panel {
       position: fixed;
-      top: 0; right: -420px;
-      width: 400px;
-      max-width: 90vw;
+      top: 0; left: 0;
+      width: 100vw;
       height: 100vh;
       background: rgba(10, 10, 20, 0.92);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border-left: 1px solid rgba(255,255,255,0.1);
       z-index: 5000;
       display: flex;
       flex-direction: column;
-      transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
       overflow: hidden;
+      transform: translateY(100%);
     }
-    #music-panel.open { right: 0; }
+    #music-panel.open { transform: translateY(0); }
 
     #music-panel-header {
       display: flex;
