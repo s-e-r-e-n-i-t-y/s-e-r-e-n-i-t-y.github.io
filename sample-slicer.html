@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sample Slicer — split a recording into sampler WAVs</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1d212b; --line:#2a2f3a;
+    --text:#e7e9ee; --muted:#8b93a3; --accent:#4da3ff; --good:#4ee08a; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.45; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1020px; margin:0 auto; padding:28px 20px 80px}
+  h1{font-size:22px; margin:0 0 4px; letter-spacing:.2px}
+  .sub{color:var(--muted); margin:0 0 22px; font-size:14px}
+  h2{font-size:14px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:0}
+  .hidden{display:none !important}
+
+  /* Drop zone */
+  .drop{
+    border:2px dashed var(--line); border-radius:14px; padding:40px 20px;
+    text-align:center; cursor:pointer; transition:border-color .15s, background .15s;
+  }
+  .drop:hover,.drop.over{border-color:var(--accent); background:rgba(77,163,255,.05)}
+  .drop-icon{font-size:34px; margin-bottom:6px}
+  .drop strong{font-size:16px}
+  .drop .link{color:var(--accent); text-decoration:underline; cursor:pointer}
+  .drop .hint{color:var(--muted); font-size:12.5px; margin-top:6px}
+  .load-error{color:var(--bad); font-size:13px; margin-top:8px}
+
+  /* Panels */
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; margin-top:16px}
+  .panel-head{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px}
+  .filebar{display:flex; align-items:center; gap:12px; margin-top:16px; flex-wrap:wrap}
+  .filebar .name{font-weight:600}
+  .muted{color:var(--muted); font-size:13px}
+
+  .controls{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px}
+  .control label{display:block; font-size:13px; color:var(--muted); margin-bottom:6px}
+  .control label span{color:var(--text); font-weight:600}
+  .control .row{display:flex; align-items:center; gap:10px}
+  input[type=range]{flex:1; accent-color:var(--accent); height:20px}
+  input[type=number]{
+    width:74px; background:var(--panel2); border:1px solid var(--line); color:var(--text);
+    border-radius:8px; padding:5px 8px; font-size:13px;
+  }
+  input[type=text]{
+    background:var(--panel2); border:1px solid var(--line); color:var(--text);
+    border-radius:8px; padding:6px 9px; font-size:13px;
+  }
+  input[type=checkbox]{accent-color:var(--accent); width:15px; height:15px}
+  .trail-label{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:13px; cursor:pointer}
+
+  canvas{width:100%; height:180px; background:#0b0d11; border-radius:10px; display:block; border:1px solid var(--line)}
+  .canvas-hint{color:var(--muted); font-size:12px; margin-top:8px}
+  .legend{font-size:12px; color:var(--muted); display:flex; gap:14px; align-items:center}
+  .legend .sw{display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-2px}
+  .sw.silence{background:rgba(255,107,107,.5)}
+  .sw.seg{background:rgba(78,224,138,.5)}
+
+  .toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .toolbar label.inline{display:flex; align-items:center; gap:6px; color:var(--muted); font-size:13px}
+
+  .btn{
+    border:1px solid var(--line); background:var(--panel2); color:var(--text);
+    border-radius:9px; padding:7px 14px; font-size:13px; cursor:pointer; font-weight:600;
+  }
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#04101f}
+  .btn.primary:hover{filter:brightness(1.08)}
+  .btn.ghost{background:transparent}
+  .btn:disabled{opacity:.55; cursor:default}
+
+  .seglist{display:flex; flex-direction:column; gap:6px; margin-top:12px}
+  .seg{
+    display:flex; align-items:center; gap:10px; background:var(--panel2);
+    border:1px solid var(--line); border-radius:9px; padding:7px 10px; font-size:13px;
+  }
+  .seg.playing{border-color:var(--accent); background:#1a2434}
+  .seg .idx{color:var(--muted); font-variant-numeric:tabular-nums; min-width:34px}
+  .seg .play{
+    background:none; border:none; color:var(--text); cursor:pointer; font-size:13px;
+    width:26px; height:26px; border-radius:6px; line-height:1;
+  }
+  .seg .play:hover{background:var(--line)}
+  .seg .play.active{color:var(--bad)}
+  .seg .keep{display:flex; align-items:center}
+  .seg input[type=checkbox]{accent-color:var(--accent); width:15px; height:15px}
+  .seg .name{flex:1; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; word-break:break-all}
+  .seg .time{color:var(--muted); font-variant-numeric:tabular-nums; font-size:12.5px; white-space:nowrap}
+  .empty{color:var(--muted); font-size:13px; padding:8px 2px}
+  .foot{color:var(--muted); font-size:12px; margin-top:24px; text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+
+  <div id="drop" class="drop">
+    <input type="file" id="file" accept="audio/*" hidden>
+    <div class="drop-icon">♫</div>
+    <div><strong>Drop an audio file here</strong> or <span class="link" id="browse">browse</span></div>
+    <div class="hint">MP3, WAV, FLAC, OGG, M4A… (anything your browser can decode)</div>
+    <div id="loadError" class="load-error"></div>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="filebar">
+      <span class="name" id="filename"></span>
+      <span class="muted" id="fileinfo"></span>
+      <button id="reload" class="btn ghost">Load a different file</button>
+    </div>
+
+    <div class="panel">
+      <h2>Silence detection</h2>
+      <div class="controls" style="margin-top:12px">
+        <div class="control">
+          <label>Silence threshold <span id="thrVal"></span></label>
+          <div class="row">
+            <input type="range" id="threshold" min="-80" max="-10" value="-45" step="1">
+            <input type="number" id="thresholdNum" min="-80" max="-10" step="1" value="-45">
+          </div>
+        </div>
+        <div class="control">
+          <label>Min. silence length <span id="silVal"></span></label>
+          <div class="row">
+            <input type="range" id="minSilence" min="50" max="2000" value="300" step="10">
+            <input type="number" id="minSilenceNum" min="50" max="2000" step="10" value="300">
+          </div>
+        </div>
+        <div class="control">
+          <label>Min. sample length <span id="samVal"></span></label>
+          <div class="row">
+            <input type="range" id="minSample" min="50" max="10000" value="500" step="10">
+            <input type="number" id="minSampleNum" min="50" max="10000" step="10" value="500">
+          </div>
+        </div>
+        <div class="control">
+          <label>Padding <span id="padVal"></span></label>
+          <div class="row">
+            <input type="range" id="padding" min="0" max="500" value="20" step="5">
+            <input type="number" id="paddingNum" min="0" max="500" step="5" value="20">
+          </div>
+        </div>
+        <div class="control">
+          <div style="font-size:13px; color:var(--muted); margin-bottom:6px">Trailing silence</div>
+          <div class="row">
+            <label class="trail-label">
+              <input type="checkbox" id="keepTrail">
+              Leave the silence in at the end of each sample
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Waveform &amp; segments</h2>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="legend">
+            <span><span class="sw silence"></span>silence</span>
+            <span><span class="sw seg"></span>segment</span>
+          </div>
+          <button id="stopBtn" class="btn ghost">Stop</button>
+        </div>
+      </div>
+      <canvas id="wave" height="180"></canvas>
+      <div class="canvas-hint">Click anywhere on the waveform to preview from that point.</div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Samples <span id="segcount"></span></h2>
+        <div class="toolbar">
+          <label class="inline">Name <input type="text" id="prefix" value="Sample"></label>
+          <button id="exportBtn" class="btn primary">Download ZIP of WAVs</button>
+
+        </div>
+      </div>
+      <div id="seglist" class="seglist"></div>
+    </div>
+  </div>
+
+
+</div>
+
+
+<script>
+"use strict";
+
+/* ============================== state ============================== */
+let audioCtx = null;
+let audioBuffer = null;
+let chData = [];          // per-channel Float32Array views
+let env = null;           // peak dB per window
+let numWindows = 0;
+let winSamples = 0;
+let winMs = 10;
+let gaps = [];            // {startSample,endSample} of true silent runs
+let segments = [];        // {start,end} sample ranges of samples
+let includeChecks = [];
+let playingIndex = -1;
+let playback = null;      // {src,startSec,endSec,startWall,raf}
+
+/* ============================== elements ============================== */
+const $ = id => document.getElementById(id);
+const drop = $('drop'), fileInput = $('file'), browse = $('browse');
+const app = $('app'), filename = $('filename'), fileinfo = $('fileinfo'), reload = $('reload');
+const loadError = $('loadError');
+const threshold = $('threshold'), thresholdNum = $('thresholdNum');
+const minSilence = $('minSilence'), minSilenceNum = $('minSilenceNum');
+const minSample = $('minSample'), minSampleNum = $('minSampleNum');
+const padding = $('padding'), paddingNum = $('paddingNum');
+const keepTrailCb = $('keepTrail');
+const thrVal = $('thrVal'), silVal = $('silVal'), samVal = $('samVal'), padVal = $('padVal');
+const wave = $('wave'), stopBtn = $('stopBtn');
+const segcount = $('segcount'), prefix = $('prefix'), exportBtn = $('exportBtn'), seglist = $('seglist');
+
+/* ============================== audio context ============================== */
+function ensureCtx(){
+  if (!audioCtx){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC){ alert("Web Audio isn't available in this browser."); throw new Error("no AudioContext"); }
+    audioCtx = new AC();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+/* ============================== load file ============================== */
+async function loadFile(file){
+  loadError.textContent = '';
+  try{
+    const buf = await file.arrayBuffer();
+    const ctx = ensureCtx();
+    audioBuffer = await ctx.decodeAudioData(buf);
+  }catch(err){
+    console.error(err);
+    loadError.textContent = 'Could not decode that file. Try a different format (MP3 or WAV usually works).';
+    return;
+  }
+  chData = [];
+  for (let c = 0; c < audioBuffer.numberOfChannels; c++) chData.push(audioBuffer.getChannelData(c));
+
+  filename.textContent = file.name;
+  fileinfo.textContent = fmtTime(audioBuffer.duration) + ' · ' + audioBuffer.sampleRate + ' Hz · ' +
+    audioBuffer.numberOfChannels + (audioBuffer.numberOfChannels === 1 ? ' ch' : ' ch');
+  drop.classList.add('hidden');
+  app.classList.remove('hidden');
+
+  computeEnvelope();
+  detect();
+}
+
+/* ============================== envelope ============================== */
+function computeEnvelope(){
+  const len = audioBuffer.length;
+  const ch = audioBuffer.numberOfChannels;
+  winSamples = Math.max(1, Math.round(audioBuffer.sampleRate * 10 / 1000)); // 10 ms windows
+  winMs = 1000 * winSamples / audioBuffer.sampleRate;
+  numWindows = Math.ceil(len / winSamples);
+  env = new Float32Array(numWindows);
+  for (let w = 0; w < numWindows; w++){
+    const s = w * winSamples;
+    const e = Math.min(len, s + winSamples);
+    let max = 0;
+    for (let c = 0; c < ch; c++){
+      const d = chData[c];
+      for (let i = s; i < e; i++){
+        const a = d[i] < 0 ? -d[i] : d[i];
+        if (a > max) max = a;
+      }
+    }
+    env[w] = 20 * Math.log10(max + 1e-9);
+  }
+}
+
+/* ============================== zero-crossing snap ============================== */
+function snapBoundary(idx){
+  if (!chData.length) return idx;
+  const len = chData[0].length;
+  const tol = Math.max(1, Math.round(audioBuffer.sampleRate * 5 / 1000));
+  let bestAny = null;
+  for (let k = 1; k <= tol; k++){
+    for (const cand of [idx + k, idx - k]){
+      if (cand <= 0 || cand >= len) continue;
+      let any = false, all = true;
+      for (let c = 0; c < chData.length; c++){
+        const a = chData[c][cand - 1], b = chData[c][cand];
+        if (a * b <= 0) any = true; else all = false;
+      }
+      if (all) return cand;                 // nearest crossing in every channel
+      if (any && bestAny === null) bestAny = cand; // fallback: single-channel crossing
+    }
+  }
+  return bestAny !== null ? bestAny : idx;
+}
+
+/* ============================== detection ============================== */
+function detect(){
+  if (!audioBuffer) return;
+  const sr = audioBuffer.sampleRate;
+  const len = audioBuffer.length;
+  const thr = Number(thresholdNum.value);
+  const minSilenceMs = Number(minSilenceNum.value);
+  const minSampleMs = Number(minSampleNum.value);
+  const padMs = Number(paddingNum.value);
+  const minSilenceWin = Math.max(1, Math.round(minSilenceMs / winMs));
+  const padSamples = Math.round(sr * padMs / 1000);
+
+  const silent = new Uint8Array(numWindows);
+  for (let w = 0; w < numWindows; w++) silent[w] = env[w] < thr ? 1 : 0;
+
+  // merge short dips of silence back into the surrounding sound
+  for (let w = 0; w < numWindows; w++){
+    if (!silent[w]) continue;
+    let e = w;
+    while (e < numWindows && silent[e]) e++;
+    if ((e - w) < minSilenceWin) for (let k = w; k < e; k++) silent[k] = 0;
+    w = e - 1;
+  }
+
+  // true silent runs -> gaps (sample ranges), for drawing & skipping
+  gaps = [];
+  for (let w = 0; w < numWindows; w++){
+    if (!silent[w]) continue;
+    let e = w;
+    while (e < numWindows && silent[e]) e++;
+    gaps.push({ startSample: w * winSamples, endSample: Math.min(len, e * winSamples) });
+    w = e - 1;
+  }
+
+  // non-silent runs -> segments, padded
+  const keepTrail = keepTrailCb.checked;
+  segments = [];
+  for (let w = 0; w < numWindows; w++){
+    if (silent[w]) continue;
+    let e = w;
+    while (e < numWindows && !silent[e]) e++;
+    const coreMs = (e - w) * winMs;
+    if (coreMs >= minSampleMs){
+      let segStart = Math.max(0, w * winSamples - padSamples);
+      let segEnd = Math.min(len, e * winSamples + padSamples);
+      // optionally keep the silence that follows, up to where the next sample starts
+      if (keepTrail && e < numWindows && silent[e]){
+        let g = e;
+        while (g < numWindows && silent[g]) g++;
+        const trailEnd = g * winSamples - padSamples;
+        if (trailEnd > segEnd) segEnd = Math.min(len, trailEnd);
+      }
+      // snap both edges to the nearest zero crossing to avoid clicks
+      const snappedStart = snapBoundary(segStart);
+      const snappedEnd = snapBoundary(segEnd);
+      if (snappedStart < snappedEnd){
+        segments.push({ start: snappedStart, end: snappedEnd });
+      }else{
+        segments.push({ start: segStart, end: segEnd });
+      }
+    }
+    w = e - 1;
+  }
+
+  stopPlayback();
+  renderSegments();
+  drawWaveform();
+}
+
+/* ============================== playback ============================== */
+function stopPlayback(){
+  if (playback){
+    try{ playback.src.stop(); }catch(e){}
+    cancelAnimationFrame(playback.raf);
+    playback = null;
+  }
+  playingIndex = -1;
+  drawWaveform();
+  updateSegUI();
+}
+
+function playRange(startSec, endSec, index){
+  if (!audioBuffer) return;
+  stopPlayback();
+  playingIndex = index;
+  const ctx = ensureCtx();
+  const src = ctx.createBufferSource();
+  src.buffer = audioBuffer;
+  src.connect(ctx.destination);
+  src.start(0, startSec, Math.max(0, endSec - startSec));
+  const startWall = ctx.currentTime;
+  playback = { src, startSec, endSec, startWall, raf: requestAnimationFrame(tick) };
+  src.onended = () => { if (playback && playback.src === src) stopPlayback(); };
+  function tick(){
+    if (!playback || playback.src !== src) return;
+    drawWaveform();
+    playback.raf = requestAnimationFrame(tick);
+  }
+  drawWaveform();
+  updateSegUI();
+}
+
+/* ============================== UI / segments ============================== */
+function padNum(i, pad){ return String(i + 1).padStart(pad, '0'); }
+function fileName(i){ return (prefix.value.trim() || 'Sample') + '_' + padNum(i, 3) + '.wav'; }
+
+function renderSegments(){
+  seglist.innerHTML = '';
+  includeChecks = [];
+  segcount.textContent = '(' + segments.length + ')';
+  if (!segments.length){
+    seglist.innerHTML = '<div class="empty">No segments found. Lower the threshold or reduce the minimum silence length.</div>';
+    return;
+  }
+  const sr = audioBuffer.sampleRate;
+  segments.forEach((s, i) => {
+    const dur = (s.end - s.start) / sr;
+    const row = document.createElement('div');
+    row.className = 'seg';
+    row.innerHTML =
+      '<span class="idx">' + padNum(i, 3) + '</span>' +
+      '<button class="play" data-i="' + i + '">▶</button>' +
+      '<label class="keep"><input type="checkbox" data-i="' + i + '" checked></label>' +
+      '<span class="name">' + fileName(i) + '</span>' +
+      '<span class="time">' + fmtTime(s.start / sr) + ' – ' + fmtTime(s.end / sr) +
+      ' · ' + dur.toFixed(2) + 's</span>';
+    seglist.appendChild(row);
+    includeChecks.push(row.querySelector('input[type=checkbox]'));
+  });
+
+  seglist.querySelectorAll('.play').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = +btn.dataset.i;
+      if (playingIndex === i) stopPlayback();
+      else playRange(segments[i].start / audioBuffer.sampleRate, segments[i].end / audioBuffer.sampleRate, i);
+    });
+  });
+  updateSegUI();
+}
+
+function updateSegUI(){
+  seglist.querySelectorAll('.play').forEach((btn, i) => {
+    const playing = i === playingIndex;
+    btn.textContent = playing ? '■' : '▶';
+    btn.classList.toggle('active', playing);
+    btn.closest('.seg').classList.toggle('playing', playing);
+  });
+}
+
+function updateNames(){
+  seglist.querySelectorAll('.seg').forEach((row, i) => {
+    row.querySelector('.name').textContent = fileName(i);
+  });
+}
+
+function updateLabels(){
+  thrVal.textContent = thresholdNum.value + ' dB';
+  silVal.textContent = minSilenceNum.value + ' ms';
+  samVal.textContent = minSampleNum.value + ' ms';
+  padVal.textContent = paddingNum.value + ' ms';
+}
+
+function fmtTime(sec){
+  const m = Math.floor(sec / 60);
+  const s = sec - m * 60;
+  return m + ':' + (s < 10 ? '0' : '') + s.toFixed(3).padStart(6, '0');
+}
+
+/* ============================== waveform ============================== */
+function drawWaveform(){
+  if (!audioBuffer) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = wave.clientWidth;
+  const h = wave.clientHeight || 180;
+  if (wave.width !== Math.round(w * dpr) || wave.height !== Math.round(h * dpr)){
+    wave.width = Math.round(w * dpr);
+    wave.height = Math.round(h * dpr);
+  }
+  const c = wave.getContext('2d');
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.clearRect(0, 0, w, h);
+  const len = audioBuffer.length;
+
+  // alternating segment backgrounds
+  for (let i = 0; i < segments.length; i++){
+    const s = segments[i];
+    c.fillStyle = i % 2 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.065)';
+    c.fillRect(s.start / len * w, 0, (s.end - s.start) / len * w, h);
+  }
+
+  // silence overlay
+  c.fillStyle = 'rgba(255,107,107,0.16)';
+  for (const g of gaps){
+    c.fillRect(g.startSample / len * w, 0, (g.endSample - g.startSample) / len * w, h);
+  }
+
+  // waveform bars (downsampled)
+  const step = Math.max(1, Math.floor(numWindows / 2000));
+  const mid = h / 2;
+  c.beginPath();
+  for (let i = 0; i < numWindows; i += step){
+    let m = -Infinity;
+    const e = Math.min(numWindows, i + step);
+    for (let k = i; k < e; k++) if (env[k] > m) m = env[k];
+    const x = (i / numWindows) * w;
+    const amp = clamp((m + 80) / 80, 0, 1) * mid * 0.96;
+    c.moveTo(x, mid - amp);
+    c.lineTo(x, mid + amp);
+  }
+  c.strokeStyle = 'rgba(120,200,255,0.85)';
+  c.lineWidth = Math.max(1, (step / numWindows) * w);
+  c.stroke();
+
+  // segment boundary lines
+  c.strokeStyle = 'rgba(78,224,138,0.55)';
+  c.lineWidth = 1;
+  for (const s of segments){
+    const x = s.start / len * w;
+    c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke();
+  }
+  if (segments.length){
+    const x = segments[segments.length - 1].end / len * w;
+    c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke();
+  }
+
+  // playhead
+  if (playback){
+    const t = Math.min(playback.endSec, playback.startSec + (ensureCtx().currentTime - playback.startWall));
+    const x = t / audioBuffer.duration * w;
+    c.strokeStyle = '#ffffff';
+    c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke();
+  }
+}
+
+function clamp(v, a, b){ return v < a ? a : (v > b ? b : v); }
+
+/* ============================== WAV encoding ============================== */
+function encodeWav(startSample, endSample){
+  const ch = audioBuffer.numberOfChannels;
+  const sr = audioBuffer.sampleRate;
+  const length = endSample - startSample;
+  const pcm = new Int16Array(length * ch);
+  let idx = 0;
+  for (let i = 0; i < length; i++){
+    const src = startSample + i;
+    for (let c = 0; c < ch; c++){
+      let s = chData[c][src];
+      if (s < -1) s = -1; else if (s > 1) s = 1;
+      pcm[idx++] = s < 0 ? Math.round(s * 0x8000) : Math.round(s * 0x7FFF);
+    }
+  }
+  const dataBytes = new Uint8Array(pcm.buffer);
+  const header = new Uint8Array(44);
+  const dv = new DataView(header.buffer);
+  const blockAlign = ch * 2;
+  writeStr(dv, 0, 'RIFF');
+  dv.setUint32(4, 36 + dataBytes.length, true);
+  writeStr(dv, 8, 'WAVE');
+  writeStr(dv, 12, 'fmt ');
+  dv.setUint32(16, 16, true);
+  dv.setUint16(20, 1, true);
+  dv.setUint16(22, ch, true);
+  dv.setUint32(24, sr, true);
+  dv.setUint32(28, sr * blockAlign, true);
+  dv.setUint16(32, blockAlign, true);
+  dv.setUint16(34, 16, true);
+  writeStr(dv, 36, 'data');
+  dv.setUint32(40, dataBytes.length, true);
+
+  const out = new Uint8Array(44 + dataBytes.length);
+  out.set(header, 0);
+  out.set(dataBytes, 44);
+  return out;
+}
+
+function writeStr(dv, off, s){ for (let i = 0; i < s.length; i++) dv.setUint8(off + i, s.charCodeAt(i)); }
+
+/* ============================== minimal ZIP (STORE / DEFLATE) ============================== */
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++){
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(bytes){
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+class Zip {
+  constructor(){ this.entries = []; }
+  async add(name, data){
+    let compressed = data, method = 0;
+    if (typeof CompressionStream !== 'undefined'){
+      try{
+        const deflated = await deflateRaw(data);
+        if (deflated.length < data.length){ compressed = deflated; method = 8; }
+      }catch(e){ /* fall back to STORE */ }
+    }
+    this.entries.push({ name, raw: data, data: compressed, method, crc: crc32(data) });
+  }
+  generate(){
+    const enc = new TextEncoder();
+    const localParts = [], centralParts = [];
+    let offset = 0, centralSize = 0;
+    for (const e of this.entries){
+      const nb = enc.encode(e.name);
+      const localOffset = offset;
+
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true);
+      lh.setUint16(4, 20, true);
+      lh.setUint16(6, 0x0800, true); // UTF-8 names
+      lh.setUint16(8, e.method, true);
+      lh.setUint16(10, 0, true); lh.setUint16(12, 0, true);
+      lh.setUint32(14, e.crc, true);
+      lh.setUint32(18, e.data.length, true);      // compressed size
+      lh.setUint32(22, e.raw.length, true);       // uncompressed size
+      lh.setUint16(26, nb.length, true);
+      lh.setUint16(28, 0, true);
+      localParts.push(lh.buffer, nb, e.data);
+
+      const cd = new DataView(new ArrayBuffer(46));
+      cd.setUint32(0, 0x02014b50, true);
+      cd.setUint16(4, 20, true); cd.setUint16(6, 20, true);
+      cd.setUint16(8, 0x0800, true);
+      cd.setUint16(10, e.method, true);
+      cd.setUint16(12, 0, true); cd.setUint16(14, 0, true);
+      cd.setUint32(16, e.crc, true);
+      cd.setUint32(20, e.data.length, true);
+      cd.setUint32(24, e.raw.length, true);
+      cd.setUint16(28, nb.length, true);
+      cd.setUint16(30, 0, true); cd.setUint16(32, 0, true);
+      cd.setUint16(34, 0, true); cd.setUint16(36, 0, true);
+      cd.setUint32(38, 0, true);
+      cd.setUint32(42, localOffset, true);
+      centralParts.push(cd.buffer, nb);
+      centralSize += 46 + nb.length;
+
+      offset = localOffset + 30 + nb.length + e.data.length;
+    }
+    const eocd = new DataView(new ArrayBuffer(22));
+    eocd.setUint32(0, 0x06054b50, true);
+    eocd.setUint16(4, 0, true); eocd.setUint16(6, 0, true);
+    eocd.setUint16(8, this.entries.length, true);
+    eocd.setUint16(10, this.entries.length, true);
+    eocd.setUint32(12, centralSize, true);
+    eocd.setUint32(16, offset, true);
+    eocd.setUint16(20, 0, true);
+    return new Blob([...localParts, ...centralParts, eocd.buffer], { type: 'application/zip' });
+  }
+}
+
+async function deflateRaw(bytes){
+  const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+/* ============================== export ============================== */
+async function exportZip(){
+  if (!segments.length){ alert('No segments detected.'); return; }
+  const base = (prefix.value.trim() || 'Sample').replace(/[\\/:*?"<>|]/g, '_');
+  const included = segments.map((s, i) => i).filter(i => includeChecks[i] && includeChecks[i].checked);
+  if (!included.length){ alert('Select at least one sample to export.'); return; }
+
+  exportBtn.disabled = true;
+  const orig = exportBtn.textContent;
+  try{
+    const zip = new Zip();
+    const pad = String(included.length).length;
+    for (let n = 0; n < included.length; n++){
+      const i = included[n];
+      exportBtn.textContent = 'Encoding… ' + (n + 1) + '/' + included.length;
+      const wav = encodeWav(segments[i].start, segments[i].end);
+      await zip.add(base + '_' + String(i + 1).padStart(pad, '0') + '.wav', wav);
+      if (n % 5 === 0) await new Promise(r => setTimeout(r, 0)); // let UI breathe
+    }
+    const blob = zip.generate();
+    triggerDownload(blob, base + '_samples.zip');
+  }catch(err){
+    console.error(err);
+    alert('Export failed: ' + err.message);
+  }finally{
+    exportBtn.disabled = false;
+    exportBtn.textContent = orig;
+  }
+}
+
+function triggerDownload(blob, name){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+/* ============================== wiring ============================== */
+function bindRange(range, num, onChange){
+  range.addEventListener('input', () => { num.value = range.value; onChange(); });
+  num.addEventListener('input', () => { range.value = num.value; onChange(); });
+}
+
+let detectTimer = null;
+function onParamChange(){
+  updateLabels();
+  clearTimeout(detectTimer);
+  detectTimer = setTimeout(detect, 100);
+}
+
+bindRange(threshold, thresholdNum, onParamChange);
+bindRange(minSilence, minSilenceNum, onParamChange);
+bindRange(minSample, minSampleNum, onParamChange);
+bindRange(padding, paddingNum, onParamChange);
+keepTrailCb.addEventListener('change', onParamChange);
+
+browse.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+drop.addEventListener('click', () => fileInput.click());
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', e => {
+  e.preventDefault();
+  drop.classList.remove('over');
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) loadFile(f);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
+
+reload.addEventListener('click', () => {
+  stopPlayback();
+  audioBuffer = null;
+  app.classList.add('hidden');
+  drop.classList.remove('hidden');
+  fileInput.value = '';
+});
+stopBtn.addEventListener('click', stopPlayback);
+exportBtn.addEventListener('click', exportZip);
+prefix.addEventListener('input', updateNames);
+
+wave.addEventListener('click', e => {
+  if (!audioBuffer) return;
+  const rect = wave.getBoundingClientRect();
+  const t = ((e.clientX - rect.left) / rect.width) * audioBuffer.duration;
+  playRange(t, audioBuffer.duration, -1);
+});
+
+window.addEventListener('resize', drawWaveform);
+updateLabels();
+</script>
+</body>
+</html>
