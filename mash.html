@@ -25,11 +25,6 @@ title: Mash Directory
             padding: 40px 24px;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
         h1 {
             font-size: 2.5rem;
             font-weight: 600;
@@ -37,49 +32,16 @@ title: Mash Directory
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 8px;
-        }
-
-        .subtitle {
-            color: #666;
-            font-size: 0.95rem;
-        }
-
-        .subtitle code {
-            background: rgba(255,255,255,0.08);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-family: 'SF Mono', Monaco, monospace;
-            font-size: 0.9em;
+            margin-bottom: 32px;
         }
 
         .video-grid {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 24px;
-            overflow-x: auto;
-            padding: 20px 0;
-            scroll-snap-type: x mandatory;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255,255,255,0.2) transparent;
-        }
-
-        .video-grid::-webkit-scrollbar {
-            height: 6px;
-        }
-
-        .video-grid::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.05);
-            border-radius: 3px;
-        }
-
-        .video-grid::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.2);
-            border-radius: 3px;
         }
 
         .video-card {
-            flex: 0 0 320px;
-            scroll-snap-align: start;
             background: rgba(255,255,255,0.03);
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 16px;
@@ -95,7 +57,6 @@ title: Mash Directory
         }
 
         .video-container {
-            position: relative;
             background: #000;
             aspect-ratio: 16/9;
         }
@@ -116,20 +77,15 @@ title: Mash Directory
             font-size: 0.95rem;
             color: #fff;
             text-decoration: none;
-            display: block;
-            white-space: nowrap;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            text-overflow: ellipsis;
-            margin-bottom: 4px;
+            line-height: 1.4;
         }
 
         .track-name:hover {
             color: #667eea;
-        }
-
-        .track-meta {
-            font-size: 0.8rem;
-            color: #666;
         }
 
         .empty-state {
@@ -138,20 +94,13 @@ title: Mash Directory
             color: #444;
         }
 
-        .empty-state code {
-            background: rgba(255,255,255,0.08);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-family: 'SF Mono', Monaco, monospace;
-        }
-
         @media (max-width: 768px) {
             h1 {
                 font-size: 1.8rem;
             }
 
-            .video-card {
-                flex: 0 0 280px;
+            .video-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -159,10 +108,7 @@ title: Mash Directory
 
 <body>
 
-<div class="header">
-    <h1>{{ page.title }}</h1>
-    <p class="subtitle">Videos found in <code>mash/</code> folder</p>
-</div>
+<h1>{{ page.title }}</h1>
 
 {% assign tracks = site.static_files | where_exp: "file", "file.path contains '/mash/'" %}
 
@@ -173,21 +119,19 @@ title: Mash Directory
                 <div class="video-container">
                     <video controls preload="none" playsinline>
                         <source src="{{ track.path | relative_url }}" type="video/mp4">
-                        Your browser does not support video playback.
                     </video>
                 </div>
                 <div class="video-info">
                     <a class="track-name" href="{{ track.path | relative_url }}">
                         {{ track.name }}
                     </a>
-                    <span class="track-meta">mp4</span>
                 </div>
             </div>
         {% endfor %}
     </div>
 {% else %}
     <div class="empty-state">
-        <p>No video files found in <code>mash/</code>.</p>
+        <p>No video files found.</p>
     </div>
 {% endif %}
 
