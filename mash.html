@@ -1,6 +1,6 @@
 ---
 layout: default
-title: My Music Directory
+title: Mash Directory
 ---
 
 <!DOCTYPE html>
@@ -9,74 +9,149 @@ title: My Music Directory
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page.title }}</title>
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background: #fafafa;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            min-height: 100vh;
+            padding: 40px 24px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
         }
 
         h1 {
-            margin-bottom: 4px;
+            font-size: 2.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
         }
 
-        .music-list {
-            list-style: none;
-            padding: 0;
-            max-width: 900px;
-            margin: 20px 0;
+        .subtitle {
+            color: #666;
+            font-size: 0.95rem;
         }
 
-        .music-item {
+        .subtitle code {
+            background: rgba(255,255,255,0.08);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.9em;
+        }
+
+        .video-grid {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-
-            padding: 12px 14px;
-            margin-bottom: 10px;
-
-            background: white;
-            border-radius: 10px;
-            border: 1px solid #e8e8e8;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-            transition: transform 0.1s ease, box-shadow 0.1s ease;
+            gap: 24px;
+            overflow-x: auto;
+            padding: 20px 0;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.2) transparent;
         }
 
-        .music-item:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        .video-grid::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .video-grid::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 3px;
+        }
+
+        .video-grid::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+        }
+
+        .video-card {
+            flex: 0 0 320px;
+            scroll-snap-align: start;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .video-card:hover {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.15);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .video-container {
+            position: relative;
+            background: #000;
+            aspect-ratio: 16/9;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .video-info {
+            padding: 16px;
         }
 
         .track-name {
-            flex: 1;
-            font-weight: 600;
-            color: #222;
+            font-weight: 500;
+            font-size: 0.95rem;
+            color: #fff;
             text-decoration: none;
+            display: block;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            margin-bottom: 4px;
         }
 
         .track-name:hover {
-            color: #1db954;
+            color: #667eea;
         }
 
-        audio {
-            width: 280px;
-            max-width: 40%;
-            outline: none;
+        .track-meta {
+            font-size: 0.8rem;
+            color: #666;
         }
 
-        @media (max-width: 600px) {
-            .music-item {
-                flex-direction: column;
-                align-items: stretch;
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #444;
+        }
+
+        .empty-state code {
+            background: rgba(255,255,255,0.08);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8rem;
             }
 
-            audio {
-                width: 100%;
-                max-width: 100%;
+            .video-card {
+                flex: 0 0 280px;
             }
         }
     </style>
@@ -84,31 +159,37 @@ title: My Music Directory
 
 <body>
 
-<h1>{{ page.title }}</h1>
-<p>Tracks found in <code>my-music/</code> folder:</p>
+<div class="header">
+    <h1>{{ page.title }}</h1>
+    <p class="subtitle">Videos found in <code>mash/</code> folder</p>
+</div>
 
 {% assign tracks = site.static_files | where_exp: "file", "file.path contains '/mash/'" %}
 
-<ul class="music-list">
-    {% for track in tracks %}
-        <li class="music-item">
-
-            <!-- clickable file name -->
-            <a class="track-name" href="{{ track.path | relative_url }}">
-                {{ track.name }}
-            </a>
-
-            <!-- inline player -->
-            <video controls preload="none">
-                <source src="{{ track.path | relative_url }}" type="audio/mpeg">
-                Your browser does not support audio playback.
-            </audio>
-
-        </li>
-    {% else %}
-        <li>No video files found in <code>mash/</code>.</li>
-    {% endfor %}
-</ul>
+{% if tracks.size > 0 %}
+    <div class="video-grid">
+        {% for track in tracks %}
+            <div class="video-card">
+                <div class="video-container">
+                    <video controls preload="none" playsinline>
+                        <source src="{{ track.path | relative_url }}" type="video/mp4">
+                        Your browser does not support video playback.
+                    </video>
+                </div>
+                <div class="video-info">
+                    <a class="track-name" href="{{ track.path | relative_url }}">
+                        {{ track.name }}
+                    </a>
+                    <span class="track-meta">mp4</span>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <p>No video files found in <code>mash/</code>.</p>
+    </div>
+{% endif %}
 
 </body>
 </html>
