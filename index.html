@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Serenity now... Insanity later"
+---
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,6 +22,60 @@
     <hr>
     <div id="weather-daily"><strong>Daily Forecast</strong><br>Loading...</div>
   </div>
+
+  <!-- Music Button -->
+  <div id="music-btn">🎵</div>
+
+  <!-- Music Panel -->
+  <div id="music-panel">
+    <div id="music-panel-header">
+      <span id="music-panel-title">🎵 Music</span>
+      <button id="music-panel-close">✕</button>
+    </div>
+    <div id="music-tabs">
+      <button class="music-tab active" data-tab="tracks">Tracks</button>
+      <button class="music-tab" data-tab="mash">Mash</button>
+    </div>
+    <div id="music-panel-body">
+      <!-- Tracks Tab -->
+      <div class="music-tab-content active" id="tab-tracks">
+        {% assign tracks = site.static_files | where_exp: "file", "file.path contains '/my-music/'" %}
+        {% if tracks.size > 0 %}
+          <ul class="music-list">
+            {% for track in tracks %}
+              <li class="music-item">
+                <a class="track-name" href="{{ track.path | relative_url }}">{{ track.name }}</a>
+                <audio controls preload="none">
+                  <source src="{{ track.path | relative_url }}" type="audio/mpeg">
+                </audio>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="music-empty">No audio files found in <code>my-music/</code>.</p>
+        {% endif %}
+      </div>
+      <!-- Mash Tab -->
+      <div class="music-tab-content" id="tab-mash">
+        {% assign mash_tracks = site.static_files | where_exp: "file", "file.path contains '/mash/'" %}
+        {% if mash_tracks.size > 0 %}
+          <ul class="music-list">
+            {% for track in mash_tracks %}
+              <li class="music-item">
+                <a class="track-name" href="{{ track.path | relative_url }}">{{ track.name }}</a>
+                <video controls preload="none">
+                  <source src="{{ track.path | relative_url }}" type="video/mp4">
+                </video>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="music-empty">No video files found in <code>mash/</code>.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
   <div class="webgl"></div>
   <div class="over">
     <img src="hoot.png" alt="Hoot" style="position: fixed; bottom: 10px; left: 10px; width: 50px; height: auto; opacity: 0.9; z-index: 9999; pointer-events: none;" />
@@ -32,8 +91,8 @@
 
   <!-- UI Text & Clock -->
   <script>
-    const messages = ["What","Why","Now","Really","Again","Seriously","Wait","Huh","Uh...","Nope","This?","That?","How","Who","Where","When","Which","Maybe","Oops","Bruh","Yo","Help","Pls","IDK","Hm","Wut","Meh","Ehh","Sigh","Fine","Ok","lol","what even","is this","don’t","not again","stop","more?","why tho"];
-    const punctuations = ["?","!","...","?!","!?","??","‽"];
+    const messages = ["What","Why","Now","Really","Again","Seriously","Wait","Huh","Uh...","Nope","This?","That?","How","Who","Where","When","Which","Maybe","Oops","Bruh","Yo","Help","Pls","IDK","Hm","Wut","Meh","Ehh","Sigh","Fine","Ok","lol","what even","is this","don't","not again","stop","more?","why tho"];
+    const punctuations = ["?","!","...","?!","!??","??","‽"];
     const btn = document.querySelector(".big-btn");
     if (btn) {
       const message = messages[Math.floor(Math.random() * messages.length)];
@@ -91,6 +150,32 @@
 
     setInterval(updateTitleClock, 30000);
     updateTitleClock();
+  </script>
+
+  <!-- Music Panel Script -->
+  <script>
+    const musicBtn = document.getElementById('music-btn');
+    const musicPanel = document.getElementById('music-panel');
+    const musicPanelClose = document.getElementById('music-panel-close');
+    const musicTabs = document.querySelectorAll('.music-tab');
+    const musicTabContents = document.querySelectorAll('.music-tab-content');
+
+    musicBtn.addEventListener('click', () => {
+      musicPanel.classList.toggle('open');
+    });
+
+    musicPanelClose.addEventListener('click', () => {
+      musicPanel.classList.remove('open');
+    });
+
+    musicTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        musicTabs.forEach(t => t.classList.remove('active'));
+        musicTabContents.forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+      });
+    });
   </script>
 
   <!-- Weather Script (Accurate hourly forecast fix) -->
@@ -178,6 +263,164 @@
     #weather-btn { position: fixed; bottom: 20px; right: 20px; font-size: 2em; cursor: pointer; z-index: 1000; }
     #weather-info { position: fixed; bottom: 60px; right: 20px; background: white; padding: 10px; border: 1px solid #ccc; border-radius: 8px; display: none; font-family: sans-serif; font-size: 0.9em; z-index: 1000; max-width: 250px; }
     #weather-info hr { border: none; border-top: 1px solid #ccc; margin: 6px 0; }
+
+    /* Music Button */
+    #music-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 70px;
+      font-size: 2em;
+      cursor: pointer;
+      z-index: 1000;
+      transition: transform 0.2s ease;
+    }
+    #music-btn:hover { transform: scale(1.15); }
+
+    /* Music Panel */
+    #music-panel {
+      position: fixed;
+      top: 0; right: -420px;
+      width: 400px;
+      max-width: 90vw;
+      height: 100vh;
+      background: rgba(10, 10, 20, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-left: 1px solid rgba(255,255,255,0.1);
+      z-index: 5000;
+      display: flex;
+      flex-direction: column;
+      transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+    }
+    #music-panel.open { right: 0; }
+
+    #music-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    #music-panel-title {
+      font-family: 'Pacifico', sans-serif;
+      font-size: 22px;
+      color: #fff;
+    }
+    #music-panel-close {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      font-size: 16px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    #music-panel-close:hover { background: rgba(255,255,255,0.15); }
+
+    /* Tabs */
+    #music-tabs {
+      display: flex;
+      padding: 10px 20px 0;
+      gap: 4px;
+    }
+    .music-tab {
+      flex: 1;
+      padding: 8px 0;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      color: rgba(255,255,255,0.5);
+      font-family: sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .music-tab.active {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border-color: rgba(255,255,255,0.2);
+    }
+    .music-tab:hover:not(.active) { color: rgba(255,255,255,0.8); }
+
+    /* Panel Body */
+    #music-panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 20px 20px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.15) transparent;
+    }
+    .music-tab-content { display: none; }
+    .music-tab-content.active { display: block; }
+
+    .music-list {
+      list-style: none;
+      padding: 0;
+      margin: 14px 0 0;
+    }
+    .music-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.06);
+      transition: background 0.15s;
+    }
+    .music-item:hover { background: rgba(255,255,255,0.08); }
+
+    .track-name {
+      flex: 1;
+      font-weight: 600;
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-family: sans-serif;
+      font-size: 13px;
+    }
+    .track-name:hover { color: #1db954; }
+
+    audio, video {
+      width: 200px;
+      max-width: 55%;
+      outline: none;
+      border-radius: 6px;
+    }
+
+    .music-empty {
+      color: rgba(255,255,255,0.4);
+      font-family: sans-serif;
+      font-size: 13px;
+      margin-top: 30px;
+      text-align: center;
+    }
+    .music-empty code { color: rgba(255,255,255,0.55); }
+
+    @media (max-width: 600px) {
+      .music-item {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      audio, video {
+        width: 100%;
+        max-width: 100%;
+      }
+    }
   </style>
 </body>
 </html>
