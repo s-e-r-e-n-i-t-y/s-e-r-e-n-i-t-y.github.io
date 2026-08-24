@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <title>💗 Serenity now... Insanity later</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%97%3C/text%3E%3C/svg%3E">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
   <link href="css/style.css" rel="stylesheet" type="text/css">
@@ -30,14 +31,6 @@
   <!-- Combined Script Imports on One Line -->
   <script src="lib/three.min.js"></script><script src="lib/stats.min.js"></script><script src="lib/SimplexNoise.js"></script><script src="lib/minivents.min.js"></script><script src="lib/TweenMax.min.js"></script><script src="lib/OrbitControls.js"></script><script src="lib/dat.gui.min.js"></script><script src="lib/atutil.js"></script><script src="lib/seedrandom.js"></script><script src="lib/three/postprocessing/EffectComposer.js"></script><script src="lib/three/postprocessing/RenderPass.js"></script><script src="lib/three/postprocessing/MaskPass.js"></script><script src="lib/three/postprocessing/ShaderPass.js"></script><script src="lib/three/shaders/FXAAShader.js"></script><script src="lib/three/shaders/CopyShader.js"></script><script src="lib/three/shaders/VignetteShader.js"></script><script src="js/SuperShader.js"></script><script src="js/TiltShiftShader.js"></script><script src="js/NoiseShader.js"></script><script src="js/SpaceShader.js"></script><script src="js/CustomRGBShiftShader.js"></script><script src="js/StarShader.js"></script><script src="js/Stars.js"></script><script src="js/Confetti.js"></script><script src="js/Ribbon.js"></script><script src="js/main.js"></script>
 
-  <!-- Pages Panel Script -->
-  <script>
-    const pagesBtn = document.getElementById('pages-btn');
-    const pagesPanel = document.getElementById('pages-panel');
-    const pagesPanelClose = document.getElementById('pages-panel-close');
-    pagesBtn.addEventListener('click', () => pagesPanel.classList.toggle('open'));
-    pagesPanelClose.addEventListener('click', () => pagesPanel.classList.remove('open'));
-  </script>
 
   <!-- UI Text & Clock -->
   <script>
@@ -299,4 +292,15 @@
     }
   </style>
 </body>
+
+  <script>
+    const pagesBtn = document.getElementById('pages-btn');
+    const pagesPanel = document.getElementById('pages-panel');
+    const pagesPanelClose = document.getElementById('pages-panel-close');
+    if (pagesBtn && pagesPanel && pagesPanelClose) {
+      pagesBtn.addEventListener('click', () => pagesPanel.classList.toggle('open'));
+      pagesPanelClose.addEventListener('click', () => pagesPanel.classList.remove('open'));
+    }
+  </script>
+
 </html>
