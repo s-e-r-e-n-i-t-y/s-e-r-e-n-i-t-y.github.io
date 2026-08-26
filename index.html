@@ -29,12 +29,12 @@
   </div>
 
   <!-- Combined Script Imports on One Line -->
-  <script src="lib/three.min.js"></script><script src="lib/stats.min.js"></script><script src="lib/SimplexNoise.js"></script><script src="lib/minivents.min.js"></script><script src="lib/TweenMax.min.js"></script><script src="lib/OrbitControls.js"></script><script src="lib/dat.gui.min.js"></script><script src="lib/atutil.js"></script><script src="lib/seedrandom.js"></script><script src="lib/three/postprocessing/EffectComposer.js"></script><script src="lib/three/postprocessing/RenderPass.js"></script><script src="lib/three/postprocessing/MaskPass.js"></script><script src="lib/three/postprocessing/ShaderPass.js"></script><script src="lib/three/shaders/FXAAShader.js"></script><script src="lib/three/shaders/CopyShader.js"></script><script src="lib/three/shaders/VignetteShader.js"></script><script src="js/SuperShader.js"></script><script src="js/TiltShiftShader.js"></script><script src="js/NoiseShader.js"></script><script src="js/SpaceShader.js"></script><script src="js/CustomRGBShiftShader.js"></script><script src="js/StarShader.js"></script><script src="js/Stars.js"></script><script src="js/Confetti.js"></script><script src="js/Ribbon.js"></script><script src="js/main.js"></script>
+  <script src="lib/three.min.js"></script><script src="lib/stats.min.js"></script><script src="lib/SimplexNoise.js"></script><script src="lib/minivents.min.js"></script><script src="lib/TweenMax.m[...]
 
 
   <!-- UI Text & Clock -->
   <script>
-    const messages = ["What","Why","Now","Really","Again","Seriously","Wait","Huh","Uh...","Nope","This?","That?","How","Who","Where","When","Which","Maybe","Oops","Bruh","Yo","Help","Pls","IDK","Hm","Wut","Meh","Ehh","Sigh","Fine","Ok","lol","what even","is this","don’t","not again","stop","more?","why tho"];
+    const messages = ["What","Why","Now","Really","Again","Seriously","Wait","Huh","Uh...","Nope","This?","That?","How","Who","Where","When","Which","Maybe","Oops","Bruh","Yo","Help","Pls","IDK","Hm",[...] 
     const punctuations = ["?","!","...","?!","!?","??","‽"];
     const btn = document.querySelector(".big-btn");
     if (btn) {
@@ -108,7 +108,7 @@
     };
 
     async function getWeather(lat, lon) {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph&hourly=temperature_2m,weathercode&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph&hourly=temperature_2m,weathercode&da[...]`
       try {
         const res = await fetch(url);
         const data = await res.json();
@@ -117,7 +117,7 @@
         const current = data.current_weather;
         const currentEmoji = weatherCodeToEmoji[current.weathercode] || "❓";
         weatherBtn.textContent = currentEmoji;
-        document.getElementById('weather-current').innerHTML = `${currentEmoji} <strong>${current.temperature.toFixed(1)}°F</strong><br>💨 Wind: ${current.windspeed.toFixed(1)} mph<br>🧭 Direction: ${current.winddirection}°`;
+        document.getElementById('weather-current').innerHTML = `${currentEmoji} <strong>${current.temperature.toFixed(1)}°F</strong><br>💨 Wind: ${current.windspeed.toFixed(1)} mph<br>🧭 Dir[...]`
 
         // Hourly Forecast — NEXT 6 HOURS based on local time
         const hourlyHTML = [];
@@ -181,30 +181,14 @@
       <span id="pages-panel-title">Pages</span>
       <button id="pages-panel-close">✕</button>
     </div>
-    <div id="pages-list">
-      <a class="page-item" href="mash.html">Mash</a>
-      <a class="page-item" href="music.html">Music</a>
-      <a class="page-item" href="hi.html">Hi</a>
-      <a class="page-item" href="hls.html">HLS</a>
-      <a class="page-item" href="shader.html">Shader</a>
-      <a class="page-item" href="more.html">More</a>
-      <a class="page-item" href="combined.html">Combined</a>
-      <a class="page-item" href="combined_fixed.html">Combined Fixed</a>
-      <a class="page-item" href="combined (1).html">Combined (1)</a>
-      <a class="page-item" href="not_found.html">Not Found</a>
-      <a class="page-item" href="index-neocities.html">Index Neocities</a>
-      <a class="page-item" href="local_shuffle_player (1).html">Local Shuffle Player</a>
-      <a class="page-item" href="matrix-standalone.html">Matrix Standalone</a>
-      <a class="page-item" href="mixxy-standalone.html">Mixxy Standalone</a>
-      <a class="page-item" href="sample-slicer.html">Sample Slicer</a>
-    </div>
+    <div id="pages-list">Loading pages...</div>
   </div>
 
   <!-- Minimal inline CSS -->
   <style>
-    #digital-clock { display: none; position: fixed; top: 10px; right: 10px; background: black; color: white; font-family: 'Pacifico', monospace; font-size: 14px; padding: 5px 10px; border-radius: 5px; z-index: 9999; pointer-events: none; }
+    #digital-clock { display: none; position: fixed; top: 10px; right: 10px; background: black; color: white; font-family: 'Pacifico', monospace; font-size: 14px; padding: 5px 10px; border-radius[...] }
     #weather-btn { position: fixed; bottom: 20px; right: 20px; font-size: 2em; cursor: pointer; z-index: 1000; }
-    #weather-info { position: fixed; bottom: 60px; right: 20px; background: white; padding: 10px; border: 1px solid #ccc; border-radius: 8px; display: none; font-family: sans-serif; font-size: 0.9em; z-index: 1000; max-width: 250px; }
+    #weather-info { position: fixed; bottom: 60px; right: 20px; background: white; padding: 10px; border: 1px solid #ccc; border-radius: 8px; display: none; font-family: sans-serif; font-size: 0.9em; [...] }
     #weather-info hr { border: none; border-top: 1px solid #ccc; margin: 6px 0; }
 
     /* Pages Button */
@@ -301,6 +285,69 @@
       pagesBtn.addEventListener('click', () => pagesPanel.classList.toggle('open'));
       pagesPanelClose.addEventListener('click', () => pagesPanel.classList.remove('open'));
     }
+  </script>
+
+  <!-- Dynamic pages list: fetch HTML files from this public repo via GitHub API -->
+  <script>
+    (async function loadPages() {
+      const owner = 's-e-r-e-n-i-t-y';
+      const repo = 's-e-r-e-n-i-t-y.github.io';
+      const pagesList = document.getElementById('pages-list');
+      if (!pagesList) return;
+
+      // Show loading state
+      pagesList.textContent = 'Loading pages...';
+
+      // Helper to create a link element
+      function makeLink(path) {
+        const a = document.createElement('a');
+        a.className = 'page-item';
+        a.href = encodeURI('/' + path);
+        // Show a nicer label: filename without extension and directory
+        const label = path.replace(/^.*\//, '').replace(/\.html$/i, '');
+        a.textContent = label;
+        a.title = path;
+        return a;
+      }
+
+      try {
+        // Get default branch
+        const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
+        if (!repoRes.ok) throw new Error('Failed to fetch repo info');
+        const repoData = await repoRes.json();
+        const branch = repoData.default_branch || 'main';
+
+        // Fetch tree recursively
+        const treeRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`);
+        if (!treeRes.ok) throw new Error('Failed to fetch repo tree');
+        const treeData = await treeRes.json();
+
+        // Collect .html files (blobs) and filter out the current index and files you may want to hide
+        const htmlFiles = (treeData.tree || [])
+          .filter(item => item.type === 'blob' && item.path.match(/\.html$/i))
+          .map(item => item.path)
+          .filter(path => !path.match(/^\.well-known\//))
+          .filter(path => !path.match(/^index\.html$/i)) // don't list the current index
+          .filter(path => !path.match(/^404\.html$/i));
+
+        // Sort and render
+        htmlFiles.sort((a,b) => a.localeCompare(b, undefined, {sensitivity: 'base'}));
+        pagesList.innerHTML = '';
+        if (htmlFiles.length === 0) {
+          pagesList.textContent = 'No pages found.';
+        } else {
+          htmlFiles.forEach(p => pagesList.appendChild(makeLink(p)));
+        }
+      } catch (err) {
+        console.error('Failed to load pages list from GitHub API', err);
+        // Fallback to a safe static list if API fails (keeps previous entries)
+        const fallback = [
+          'mash.html','music.html','hi.html','hls.html','shader.html','more.html','combined.html','combined_fixed.html','combined (1).html','not_found.html','index-neocities.html','local_shuffle_player (1).html','matrix-standalone.html','mixxy-standalone.html','sample-slicer.html'
+        ];
+        pagesList.innerHTML = '';
+        fallback.forEach(p => pagesList.appendChild(makeLink(p)));
+      }
+    })();
   </script>
 
 </html>
