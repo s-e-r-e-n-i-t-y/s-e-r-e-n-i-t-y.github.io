@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cloudy? — Forecast for your zip code</title>
+<style>
+  :root {
+    --bg: #0e1420;
+    --card: #16202f;
+    --card2: #1c2a3d;
+    --text: #e8eef7;
+    --muted: #93a4bd;
+    --accent: #5aa9ff;
+    --clear: #3a8fd8;
+    --partly: #7a8ea6;
+    --cloudy: #9aa8b8;
+    --overcast: #c3ccd6;
+    --rain0: #17304a;
+    --rain1: #1d4d80;
+    --rain2: #2f7cc7;
+    --rain3: #53b4ff;
+    --now: #ffb454;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    padding: 24px 16px 48px;
+    max-width: 900px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: .9rem; margin-bottom: 20px; }
+  .controls {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 24px;
+  }
+  input[type=text] {
+    background: var(--card); border: 1px solid #2c3b52; color: var(--text);
+    padding: 10px 12px; border-radius: 8px; font-size: 1rem; width: 140px;
+  }
+  input[type=text]:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  button {
+    background: var(--accent); color: #0b1420; border: none; padding: 10px 18px;
+    border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer;
+  }
+  button:hover { filter: brightness(1.1); }
+  .status { color: var(--muted); margin-bottom: 16px; font-size: .95rem; }
+  .status.error { color: #ff8f8f; }
+  .card {
+    background: var(--card); border: 1px solid #223248; border-radius: 12px;
+    padding: 18px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 12px; color: var(--text); }
+  .headline {
+    background: linear-gradient(135deg, #1c3350, #1a2a40);
+    border: 1px solid #2b4a70; border-radius: 12px; padding: 18px; margin-bottom: 16px;
+  }
+  .headline .big { font-size: 1.15rem; font-weight: 700; }
+  .headline .big .when { color: var(--accent); }
+  .headline .small { color: var(--muted); font-size: .9rem; margin-top: 4px; }
+  .period {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; background: var(--card2);
+  }
+  .period:last-child { margin-bottom: 0; }
+  .period .time { font-weight: 600; }
+  .period .detail { color: var(--muted); font-size: .85rem; text-align: right; }
+  .bar { display: flex; height: 44px; border-radius: 8px 8px 0 0; overflow: hidden; margin-top: 8px; }
+  .rainbar { display: flex; height: 20px; border-radius: 0 0 8px 8px; overflow: hidden; margin-top: 2px; }
+  .bar .cell, .rainbar .cell {
+    flex: 1; min-width: 0; position: relative; cursor: default;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .bar .cell span {
+    font-size: .62rem; color: #0b1420; font-weight: 700;
+    writing-mode: vertical-rl; transform: rotate(180deg);
+    opacity: .85; padding: 2px 0;
+  }
+  .bar .cell.now { outline: 2px solid var(--now); outline-offset: -2px; }
+  .cell.overcast { background: var(--overcast); }
+  .cell.cloudy   { background: var(--cloudy); }
+  .cell.partly   { background: var(--partly); }
+  .cell.clear    { background: var(--clear); }
+  .cell.rain3 { background: var(--rain3); }
+  .cell.rain2 { background: var(--rain2); }
+  .cell.rain1 { background: var(--rain1); }
+  .cell.rain0 { background: var(--rain0); }
+  .cell.drop { color: #04243f; font-size: .72rem; line-height: 20px; align-items: center; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: .8rem; color: var(--muted); }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; margin-right: 5px; vertical-align: -2px; }
+  .prefrow { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: .85rem; color: var(--muted); }
+  .prefrow select {
+    background: var(--card2); border: 1px solid #2c3b52; color: var(--text);
+    padding: 6px 8px; border-radius: 6px; font-size: .85rem; cursor: pointer;
+  }
+  .prefrow select:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  .daylabel {
+    display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: .85rem; color: var(--text);
+  }
+  .daylabel input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+  .sunline { color: var(--muted); font-size: .82rem; margin-bottom: 8px; }
+  .besthead { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+  .besthead .when { color: var(--accent); }
+  .besthead .why { display: block; color: var(--muted); font-size: .85rem; font-weight: 400; margin-top: 2px; }
+  .scorebar { display: flex; height: 20px; border-radius: 8px; overflow: hidden; margin-top: 8px; }
+  .scorebar .cell { flex: 1; min-width: 0; position: relative; cursor: default; }
+  .scorebar .cell.now { outline: 2px solid var(--now); outline-offset: -2px; }
+  .scorebar .cell.night { opacity: .3; }
+  .cell.great { background: #2ecc71; }
+  .cell.good  { background: #a3d94f; }
+  .cell.meh   { background: #f2b134; }
+  .cell.bad   { background: #e05555; }
+  .bestwin {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: 8px; margin-bottom: 8px; background: var(--card2);
+  }
+  .bestwin:last-child { margin-bottom: 0; }
+  .bestwin .rank { font-weight: 800; color: var(--muted); min-width: 18px; }
+  .bestwin .time { font-weight: 600; }
+  .bestwin .score {
+    font-weight: 800; padding: 2px 8px; border-radius: 20px; font-size: .8rem;
+  }
+  .bestwin .score.great { background: #2ecc71; color: #06230f; }
+  .bestwin .score.good  { background: #a3d94f; color: #22300a; }
+  .bestwin .score.meh   { background: #f2b134; color: #33230a; }
+  .bestwin .score.bad   { background: #e05555; color: #2a0a0a; }
+  .bestwin .detail { color: var(--muted); font-size: .8rem; text-align: right; }
+  .note { color: var(--muted); font-size: .78rem; margin-top: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid #223248; }
+  th { color: var(--muted); font-weight: 500; }
+  td.day { font-weight: 600; white-space: nowrap; }
+  .cloudy-now { color: var(--accent); font-weight: 700; }
+  .rainy { color: var(--rain3); font-weight: 700; }
+  .tooltip { position: absolute; display: none; background: #0b1420; border: 1px solid #2c3b52;
+    color: var(--text); padding: 4px 8px; border-radius: 6px; font-size: .75rem; white-space: nowrap;
+    bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); z-index: 5; }
+  .rainbar .tooltip { bottom: calc(100% + 4px); }
+  .cell:hover .tooltip { display: block; }
+  footer { color: var(--muted); font-size: .78rem; margin-top: 24px; }
+</style>
+</head>
+<body>
+  <h1>☁️ When will it be cloudy?</h1>
+  <div class="sub">Cloud, rain &amp; temperature forecast — data from Open-Meteo</div>
+
+  <div class="controls">
+    <input type="text" id="zip" maxlength="40" placeholder="ZIP code or city" spellcheck="false">
+    <button id="go">Check forecast</button>
+  </div>
+
+  <div id="status" class="status">Loading forecast…</div>
+
+  <div id="content" style="display:none">
+    <div class="headline" id="headline"></div>
+    <div class="card">
+      <h2>Next 48 hours</h2>
+      <div class="bar" id="bar"></div>
+      <div class="rainbar" id="rainbar"></div>
+      <div class="legend">
+        <span><i class="cell clear"></i>Clear (&lt;40%)</span>
+        <span><i class="cell partly"></i>Partly (40–70%)</span>
+        <span><i class="cell cloudy"></i>Cloudy (70–90%)</span>
+        <span><i class="cell overcast"></i>Overcast (90%+)</span>
+      </div>
+      <div class="legend">
+        <span><i class="cell rain1"></i>Rain &lt;40%</span>
+        <span><i class="cell rain2"></i>40–70%</span>
+        <span><i class="cell rain3"></i>70%+ 💧</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>🏞️ Best time to go outside</h2>
+      <div class="prefrow">
+        <span class="preflabel">Cloud preference:</span>
+        <select id="pref">
+          <option value="sun">☀️ Prefer sun</option>
+          <option value="shade">🌥️ Prefer shade</option>
+          <option value="any" selected>⚖️ Doesn't matter</option>
+        </select>
+        <label class="daylabel"><input type="checkbox" id="dayonly"> 🌞 Daytime only (sunrise–sunset)</label>
+      </div>
+      <div class="sunline" id="sunline"></div>
+      <div id="besthead" class="besthead"></div>
+      <div class="scorebar" id="scorebar"></div>
+      <div class="legend">
+        <span><i class="cell great"></i>Great</span>
+        <span><i class="cell good"></i>Good</span>
+        <span><i class="cell meh"></i>So-so</span>
+        <span><i class="cell bad"></i>Bad</span>
+      </div>
+      <div id="bestlist"></div>
+      <div class="note">Score = rain chance (45%) + temperature comfort (35%) + your cloud preference (20%). Best = low rain, ~65–80°F, and clouds to your liking. Daytime = actual sunrise–sunset for the forecast area.</div>
+    </div>
+    <div class="card">
+      <h2>Cloudy periods coming up</h2>
+      <div id="periods"></div>
+    </div>
+    <div class="card">
+      <h2>🌧️ Rain chances coming up</h2>
+      <div id="rainperiods"></div>
+    </div>
+    <div class="card">
+      <h2>Next 7 days</h2>
+      <table id="days">
+        <thead><tr><th>Day</th><th>Cloudiest window</th><th>☁️ Avg</th><th>☁️ Max</th><th>🌧️ Max</th><th>💨 Wind</th><th>💧 Hum</th><th>Hi / Lo</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>Powered by Open-Meteo (free, no API key). Times are local for the forecast area. Cloudy = ≥70% cloud cover · Rain = ≥50% chance · Wind in mph.</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const CLOUDY = 70;
+const RAINY = 50;
+const last = {};
+
+function parseLocal(iso) {
+  // API returns wall-clock local time like "2026-08-22T14:00" in the area's timezone.
+  const [date, time] = iso.split("T");
+  const [y, m, d] = date.split("-").map(Number);
+  const [hh, mm] = time.split(":").map(Number);
+  return { y, m, d, hh, mm, date };
+}
+
+function fmtDay(p) {
+  const days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  return days[new Date(p.y, p.m - 1, p.d).getDay()];
+}
+function fmtDate(p) {
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `${fmtDay(p)} ${months[p.m - 1]} ${p.d}`;
+}
+function fmtHM(p) { return `${((p.hh + 11) % 12) + 1}${p.hh >= 12 ? " PM" : " AM"}`; }
+function fmtTime(p) {
+  if (p.hh === 0) return "12 AM";
+  if (p.hh === 12) return "12 PM";
+  return `${((p.hh + 11) % 12) + 1} ${p.hh > 12 ? "PM" : "AM"}`;
+}
+function fmtDayTime(p) {
+  const sameDay = p.hh === 23 || p.hh === 0;
+  return `${fmtDate(p)} · ${fmtHM(p)}`;
+}
+function fmtSpan(start, end) {
+  const sameDay = start.d === end.d;
+  const sameHour = sameDay && start.hh === end.hh;
+  return sameHour ? fmtTime(start)
+    : sameDay ? `${fmtTime(start)} – ${fmtTime(end)}`
+    : `${fmtDayTime(start)} – ${fmtDayTime(end)}`;
+}
+function fmtInches(mm) {
+  const inches = (mm || 0) / 25.4;
+  return inches > 0 ? `${inches.toFixed(2)}″` : "0″";
+}
+function level(cc) {
+  if (cc >= 90) return "overcast";
+  if (cc >= CLOUDY) return "cloudy";
+  if (cc >= 40) return "partly";
+  return "clear";
+}
+function rainLevel(prob) {
+  if (prob >= 70) return "rain3";
+  if (prob >= 40) return "rain2";
+  if (prob >= 20) return "rain1";
+  return "rain0";
+}
+
+// --- "Best time to go outside" scoring ---
+function scoreHour(cc, temp, prob, pref) {
+  // Rain chance: the big one. 0% -> 100, ~83%+ -> 0.
+  const sRain = Math.max(0, 100 - (prob ?? 0) * 1.2);
+  // Temperature comfort: ideal 65-80F, harsher penalty above than below.
+  let sTemp = 100;
+  if (temp < 65) sTemp = Math.max(0, 100 - (65 - temp) * 3);
+  else if (temp > 80) sTemp = Math.max(0, 100 - (temp - 80) * 4);
+  // Cloud preference (clamped to 100).
+  let sCloud = 100;
+  if (pref === "sun") sCloud = Math.min(100, Math.max(30, 110 - cc));
+  else if (pref === "shade") sCloud = Math.min(100, Math.max(30, cc + 30));
+  return Math.round(sRain * 0.45 + sTemp * 0.35 + sCloud * 0.2);
+}
+function scoreLevel(s) {
+  if (s >= 75) return "great";
+  if (s >= 60) return "good";
+  if (s >= 40) return "meh";
+  return "bad";
+}
+const FALLBACK_START = 7, FALLBACK_END = 20; // only used if sunrise/sunset data is missing
+function fmtTimeMin(p) {
+  const h = p.hh % 12 === 0 ? 12 : p.hh % 12;
+  return `${h}:${String(p.mm).padStart(2, "0")} ${p.hh < 12 ? "AM" : "PM"}`;
+}
+function buildDaytimes(times, fx) {
+  // hour-aligned daytime flags using each day's actual sunrise/sunset
+  const sun = (fx.daily && fx.daily.sunrise) || [];
+  const set = (fx.daily && fx.daily.sunset) || [];
+  const byDate = {};
+  sun.forEach((s, i) => { byDate[s.slice(0, 10)] = { rise: parseLocal(s).hh, set: parseLocal(set[i]).hh }; });
+  return times.map(t => {
+    const d = byDate[t.slice(0, 10)];
+    const hh = parseLocal(t).hh;
+    if (!d) return hh >= FALLBACK_START && hh <= FALLBACK_END;
+    return hh >= d.rise && hh <= d.set;
+  });
+}
+function bestWindows(clouds, temps, probs, pref, daytimes, daytimeOnly) {
+  // Pick discrete, non-overlapping windows: best 4h, then 3h, then 2h stretches.
+  // With daytimeOnly, night hours are excluded from candidate windows entirely.
+  const scores = clouds.map((cc, i) => scoreHour(cc, temps[i], probs[i] ?? 0, pref));
+  const n = scores.length;
+  const used = new Array(n).fill(false);
+  const windows = [];
+  for (const L of [4, 3, 2]) {
+    for (let tries = 0; tries < 3; tries++) {
+      let bestI = -1, bestAvg = -1;
+      for (let i = 0; i + L - 1 < n; i++) {
+        let overlaps = false;
+        for (let j = i; j < i + L; j++) {
+          if (used[j] || (daytimeOnly && !daytimes[j])) { overlaps = true; break; }
+        }
+        if (overlaps) continue;
+        let sum = 0;
+        for (let j = i; j < i + L; j++) sum += scores[j];
+        const avg = sum / L;
+        if (avg > bestAvg) { bestAvg = avg; bestI = i; }
+      }
+      if (bestI < 0 || bestAvg < 65) break;
+      for (let j = bestI; j < bestI + L; j++) used[j] = true;
+      windows.push({ start: bestI, end: bestI + L - 1, avg: Math.round(bestAvg), len: L });
+    }
+  }
+  return windows.slice(0, 3);
+}
+function windowStats(w, temps, clouds, probs, winds, hums) {
+  let tMin = Infinity, tMax = -Infinity, cMin = Infinity, cMax = -Infinity, rMax = 0, wMax = 0, hSum = 0;
+  for (let i = w.start; i <= w.end; i++) {
+    tMin = Math.min(tMin, temps[i]); tMax = Math.max(tMax, temps[i]);
+    cMin = Math.min(cMin, clouds[i]); cMax = Math.max(cMax, clouds[i]);
+    rMax = Math.max(rMax, probs[i] ?? 0);
+    wMax = Math.max(wMax, winds[i] ?? 0);
+    hSum += hums[i] ?? 0;
+  }
+  return { tMin, tMax, cMin, cMax, rMax, wMax, humAvg: Math.round(hSum / (w.end - w.start + 1)) };
+}
+function renderBest() {
+  if (!last.fx) return;
+  const times = last.fx.hourly.time;
+  const clouds = last.fx.hourly.cloud_cover;
+  const temps = last.fx.hourly.temperature_2m;
+  const probs = last.fx.hourly.precipitation_probability || [];
+  const winds = last.fx.hourly.wind_speed_10m || [];
+  const hums = last.fx.hourly.relative_humidity_2m || [];
+  const pref = $("pref").value;
+  const daytimeOnly = $("dayonly").checked;
+  const daytimes = buildDaytimes(times, last.fx);
+  const now = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  const nowIso = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:00`;
+  const todayStr = nowIso.slice(0, 10);
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const tomorrowStr = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth()+1)}-${pad(tomorrow.getDate())}`;
+
+  // Score strip, aligned with the 48-hour bars.
+  const idx0 = Math.max(0, times.findIndex(t => t >= nowIso));
+  const bar = $("scorebar");
+  bar.innerHTML = "";
+  for (let i = 0; i < 48; i++) {
+    const idx = idx0 + i;
+    if (idx >= times.length) break;
+    const s = scoreHour(clouds[idx], temps[idx], probs[idx], pref);
+    const cell = document.createElement("div");
+    cell.className = `cell ${scoreLevel(s)}`;
+    if (times[idx] === nowIso) cell.classList.add("now");
+    if (daytimeOnly && !daytimes[idx]) cell.classList.add("night");
+    cell.innerHTML = `<div class="tooltip">${fmtDate(parseLocal(times[idx]))} ${fmtTime(parseLocal(times[idx]))} — score ${s}/100 · ☁️ ${clouds[idx]}% · 🌡️ ${Math.round(temps[idx])}°F · 🌧️ ${probs[idx] ?? 0}% · 💨 ${winds[idx] ?? 0} mph · 💧 ${hums[idx] ?? 0}%</div>`;
+    bar.appendChild(cell);
+  }
+
+  // Ranked list.
+  const windows = bestWindows(clouds, temps, probs, pref, daytimes, daytimeOnly);
+  const head = $("besthead");
+  const list = $("bestlist");
+  if (windows.length === 0) {
+    head.innerHTML = daytimeOnly
+      ? `<span class="when">No good daytime windows</span> in the next 7 days — no stretch of 2+ daytime hours scores well enough (65/100).`
+      : `<span class="when">No good windows</span> in the next 7 days — no stretch of 2+ hours scores well enough (65/100).`;
+    list.innerHTML = "";
+    return;
+  }
+  const sun = (last.fx.daily && last.fx.daily.sunrise) || [];
+  const sunSet = (last.fx.daily && last.fx.daily.sunset) || [];
+  const sunIdx = sun.findIndex(s => s.startsWith(todayStr));
+  $("sunline").textContent = sunIdx >= 0
+    ? `🌅 Today: ${fmtTimeMin(parseLocal(sun[sunIdx]))} – ${fmtTimeMin(parseLocal(sunSet[sunIdx]))}`
+    : "";
+
+  const w = windows[0];
+  const st = windowStats(w, temps, clouds, probs, winds, hums);
+  const sp = parseLocal(times[w.start]), ep = parseLocal(times[w.end]);
+  const when = sp.date === todayStr ? "Today" : sp.date === tomorrowStr ? "Tomorrow" : fmtDate(sp);
+  head.innerHTML = `<span class="when">${when} · ${fmtSpan(sp, ep)}</span> — ${w.avg}/100
+    <span class="why">☀️ ${Math.round(st.tMin)}–${Math.round(st.tMax)}°F · 🌧️ up to ${st.rMax}% · ☁️ ${st.cMin}–${st.cMax}% · 💨 up to ${st.wMax} mph · 💧 ${st.humAvg}%${daytimeOnly ? " · 🌞 daytime only" : ""}</span>`;
+  list.innerHTML = "";
+  windows.forEach((ww, i) => {
+    const s = windowStats(ww, temps, clouds, probs, winds, hums);
+    const s2 = parseLocal(times[ww.start]), e2 = parseLocal(times[ww.end]);
+    const w2 = s2.date === todayStr ? "Today" : s2.date === tomorrowStr ? "Tomorrow" : fmtDate(s2);
+    const row = document.createElement("div");
+    row.className = "bestwin";
+    row.innerHTML = `<span class="rank">${i + 1}</span>
+      <span class="time">${w2} · ${fmtSpan(s2, e2)}</span>
+      <span class="score ${scoreLevel(ww.avg)}">${ww.avg}/100</span>
+      <span class="detail">${Math.round(s.tMin)}–${Math.round(s.tMax)}°F · 🌧️ up to ${s.rMax}% · 💨 up to ${s.wMax} mph · 💧 ${s.humAvg}%</span>`;
+    list.appendChild(row);
+  });
+}
+
+async function resolveLocation(q) {
+  const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=10&language=en&format=json`);
+  if (!geoRes.ok) throw new Error("Geocoding request failed.");
+  const geo = await geoRes.json();
+  if (!geo.results || geo.results.length === 0) throw new Error(`No location found for "${q}".`);
+  // Prefer a result whose postcode list actually includes the requested zip.
+  return geo.results.find(r => (r.postcodes || []).includes(String(q))) || geo.results[0];
+}
+
+async function reverseGeocode(lat, lon) {
+  const res = await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&count=5&language=en&format=json`);
+  if (!res.ok) throw new Error("Reverse geocoding request failed.");
+  const data = await res.json();
+  if (!data.results || data.results.length === 0) throw new Error("Couldn't determine your location.");
+  return data.results[0];
+}
+
+async function getForecast(match) {
+  const fxRes = await fetch(
+    `https://api.open-meteo.com/v1/forecast?latitude=${match.latitude}&longitude=${match.longitude}` +
+    `&hourly=cloud_cover,temperature_2m,precipitation_probability,precipitation,wind_speed_10m,relative_humidity_2m` +
+    `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset` +
+    `&forecast_days=7&timezone=auto&temperature_unit=fahrenheit&wind_speed_unit=mph`
+  );
+  if (!fxRes.ok) throw new Error("Forecast request failed.");
+  const fx = await fxRes.json();
+  return { place: match, fx };
+}
+
+function buildPeriods(times, values, threshold) {
+  const periods = [];
+  let start = null, prev = null, sum = 0, n = 0;
+  const push = () => {
+    if (!start) return;
+    periods.push({ start, end: prev, avg: Math.round(sum / n) });
+    start = null; sum = 0; n = 0;
+  };
+  for (let i = 0; i < times.length; i++) {
+    const p = parseLocal(times[i]);
+    const v = values[i] ?? 0;
+    if (v >= threshold) {
+      if (!start) start = p;
+      sum += v; n++;
+      prev = p;
+    } else {
+      push();
+    }
+  }
+  push();
+  return periods;
+}
+
+function buildRainPeriods(times, probs, precip) {
+  const periods = [];
+  let start = null, prev = null, maxProb = 0, maxPrecip = 0;
+  const push = () => {
+    if (!start) return;
+    periods.push({ start, end: prev, maxProb, maxPrecip });
+    start = null; maxProb = 0; maxPrecip = 0;
+  };
+  for (let i = 0; i < times.length; i++) {
+    const p = parseLocal(times[i]);
+    const prob = probs[i] ?? 0;
+    if (prob >= RAINY) {
+      if (!start) start = p;
+      if (prob > maxProb) maxProb = prob;
+      if ((precip[i] ?? 0) > maxPrecip) maxPrecip = precip[i];
+      prev = p;
+    } else {
+      push();
+    }
+  }
+  push();
+  return periods;
+}
+
+function render(zip, place, fx) {
+  const zipLabel = zip ? ` (${zip})` : "";
+  const times = fx.hourly.time;
+  const clouds = fx.hourly.cloud_cover;
+  const temps = fx.hourly.temperature_2m;
+  const probs = fx.hourly.precipitation_probability || [];
+  const precip = fx.hourly.precipitation || [];
+  const winds = fx.hourly.wind_speed_10m || [];
+  const hums = fx.hourly.relative_humidity_2m || [];
+  const daily = fx.daily || {};
+  const now = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  const nowIso = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:00`;
+  const todayStr = nowIso.slice(0, 10);
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const tomorrowStr = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth()+1)}-${pad(tomorrow.getDate())}`;
+  const idxOf = p => times.findIndex(t => t === `${p.date}T${pad(p.hh)}:00`);
+
+  // --- Headline ---
+  const periods = buildPeriods(times, clouds, CLOUDY);
+  const rainPeriods = buildRainPeriods(times, probs, precip);
+  const first = periods[0];
+  let headline;
+  if (first) {
+    const i0 = idxOf(first.start), i1 = idxOf(first.end);
+    let maxRain = 0;
+    for (let i = i0; i <= i1; i++) maxRain = Math.max(maxRain, probs[i] ?? 0);
+    const rainNote = maxRain >= RAINY ? ` · 🌧️ up to ${maxRain}%` : "";
+    const temp = `, around ${Math.round(temps[i0])}°F`;
+    const when = first.start.date === todayStr ? "Today" :
+                 first.start.date === tomorrowStr ? "Tomorrow" : fmtDate(first.start);
+    headline = `<div class="big">Next cloudy period: <span class="when">${when} · ${fmtSpan(first.start, first.end)}</span>${temp}${rainNote}</div>
+      <div class="small">Averaging ${first.avg}% cloud cover · ${place.name}, ${place.admin1 || ""}${zipLabel}</div>`;
+  } else if (rainPeriods.length > 0) {
+    const rp = rainPeriods[0];
+    const when = rp.start.date === todayStr ? "Today" :
+                 rp.start.date === tomorrowStr ? "Tomorrow" : fmtDate(rp.start);
+    headline = `<div class="big">No cloudy periods this week, but rain possible: <span class="when">${when} · ${fmtSpan(rp.start, rp.end)}</span> 🌧️ up to ${rp.maxProb}%</div>
+      <div class="small">${place.name}, ${place.admin1 || ""}${zipLabel}</div>`;
+  } else {
+    headline = `<div class="big">No cloudy or rainy periods in the next 7 days.</div><div class="small">Plenty of sun ahead for ${place.name}, ${place.country_code}${zipLabel}.</div>`;
+  }
+  $("headline").innerHTML = headline;
+
+  // --- 48-hour bar (cloud + rain strips) ---
+  const startIdx = times.findIndex(t => t >= nowIso);
+  const idx0 = startIdx >= 0 ? startIdx : 0;
+  const n = 48;
+  const bar = $("bar");
+  const rainbar = $("rainbar");
+  bar.innerHTML = "";
+  rainbar.innerHTML = "";
+  for (let i = 0; i < n; i++) {
+    const idx = idx0 + i;
+    if (idx >= times.length) break;
+    const p = parseLocal(times[idx]);
+    const cc = clouds[idx];
+    const prob = probs[idx] ?? 0;
+    const isNow = times[idx] === nowIso;
+
+    const cell = document.createElement("div");
+    cell.className = `cell ${level(cc)}`;
+    if (isNow) cell.classList.add("now");
+    cell.innerHTML = `<span>${fmtTime(p).replace(" ", "")}</span>` +
+      `<div class="tooltip">${fmtDate(p)} ${fmtTime(p)} — ☁️ ${cc}% · 🌡️ ${Math.round(temps[idx])}°F` +
+      ` · 🌧️ ${prob}% (${fmtInches(precip[idx])}) · 💨 ${winds[idx] ?? 0} mph · 💧 ${hums[idx] ?? 0}%</div>`;
+    bar.appendChild(cell);
+
+    const rcell = document.createElement("div");
+    rcell.className = `cell ${rainLevel(prob)}`;
+    if (isNow) rcell.classList.add("now");
+    if (prob >= RAINY) rcell.classList.add("drop");
+    rcell.innerHTML = (prob >= RAINY ? "💧" : "") +
+      `<div class="tooltip">${fmtDate(p)} ${fmtTime(p)} — 🌧️ ${prob}% · ${fmtInches(precip[idx])}</div>`;
+    rainbar.appendChild(rcell);
+  }
+
+  // --- Cloudy periods list ---
+  const periodsDiv = $("periods");
+  if (periods.length === 0) {
+    periodsDiv.innerHTML = `<div class="period"><span class="time">None</span><span class="detail">Cloud cover stays below ${CLOUDY}% all week</span></div>`;
+  } else {
+    periodsDiv.innerHTML = "";
+    periods.forEach(pr => {
+      const when = pr.start.date === todayStr ? "Today" : pr.start.date === tomorrowStr ? "Tomorrow" : "";
+      const row = document.createElement("div");
+      row.className = "period";
+      row.innerHTML = `<span class="time">${when ? when + " · " : ""}${fmtDate(pr.start)} · ${fmtSpan(pr.start, pr.end)}</span>
+        <span class="detail">${pr.avg}% avg cloud cover</span>`;
+      periodsDiv.appendChild(row);
+    });
+  }
+
+  // --- Rain periods list ---
+  const rainDiv = $("rainperiods");
+  if (!probs.length) {
+    rainDiv.innerHTML = `<div class="period"><span class="time">—</span><span class="detail">Rain data not available</span></div>`;
+  } else if (rainPeriods.length === 0) {
+    rainDiv.innerHTML = `<div class="period"><span class="time">None</span><span class="detail">Rain chance stays below ${RAINY}% all week</span></div>`;
+  } else {
+    rainDiv.innerHTML = "";
+    rainPeriods.forEach(rp => {
+      const when = rp.start.date === todayStr ? "Today" : rp.start.date === tomorrowStr ? "Tomorrow" : "";
+      const row = document.createElement("div");
+      row.className = "period";
+      row.innerHTML = `<span class="time">🌧️ ${when ? when + " · " : ""}${fmtDate(rp.start)} · ${fmtSpan(rp.start, rp.end)}</span>
+        <span class="detail">up to ${rp.maxProb}% · up to ${fmtInches(rp.maxPrecip)}</span>`;
+      rainDiv.appendChild(row);
+    });
+  }
+
+  // --- 7-day table ---
+  const tbody = $("days").querySelector("tbody");
+  tbody.innerHTML = "";
+  const days = new Map();
+  for (let i = 0; i < times.length; i++) {
+    const key = parseLocal(times[i]).date;
+    if (!days.has(key)) days.set(key, { clouds: [], winds: [], hums: [] });
+    const d = days.get(key);
+    d.clouds.push(clouds[i]);
+    d.winds.push(winds[i] ?? 0);
+    d.hums.push(hums[i] ?? 0);
+  }
+  const sortedDays = [...days.entries()].slice(0, 7);
+  sortedDays.forEach(([date, vals], di) => {
+    const p = parseLocal(date + "T00:00");
+    const avg = Math.round(vals.clouds.reduce((a, b) => a + b, 0) / vals.clouds.length);
+    const max = Math.max(...vals.clouds);
+    const windMax = Math.round(Math.max(...vals.winds));
+    const humAvg = Math.round(vals.hums.reduce((a, b) => a + b, 0) / vals.hums.length);
+    // cloudiest contiguous window within the day
+    let bestStart = -1, bestLen = 0;
+    let runStart = -1, runLen = 0;
+    vals.clouds.forEach((v, i) => {
+      if (v >= CLOUDY) {
+        if (runStart < 0) runStart = i;
+        runLen++;
+        if (runLen > bestLen) { bestLen = runLen; bestStart = runStart; }
+      } else {
+        runStart = -1; runLen = 0;
+      }
+    });
+    let windowTxt = "—";
+    if (bestLen > 0) {
+      const sp = { ...p, hh: bestStart }, ep = { ...p, hh: bestStart + bestLen - 1 };
+      windowTxt = `${fmtTime(sp)} – ${fmtTime(ep)}`;
+    }
+    const rainMax = daily.precipitation_probability_max ? daily.precipitation_probability_max[di] ?? 0 : 0;
+    const hi = daily.temperature_2m_max ? Math.round(daily.temperature_2m_max[di]) : "—";
+    const lo = daily.temperature_2m_min ? Math.round(daily.temperature_2m_min[di]) : "—";
+    const tr = document.createElement("tr");
+    const isCloudy = max >= CLOUDY;
+    const isRainy = rainMax >= RAINY;
+    tr.innerHTML = `<td class="day">${fmtDate(p)}${date === todayStr ? " (today)" : ""}</td>
+      <td class="${isCloudy ? "cloudy-now" : ""}">${windowTxt}</td>
+      <td>${avg}%</td><td>${max}%</td>
+      <td class="${isRainy ? "rainy" : ""}">${isRainy ? "💧 " : ""}${rainMax}%</td>
+      <td>${windMax} mph</td><td>${humAvg}%</td>
+      <td>${hi}° / ${lo}°</td>`;
+    tbody.appendChild(tr);
+  });
+
+  renderBest();
+}
+
+async function run(query) {
+  const status = $("status");
+  $("content").style.display = "none";
+  status.className = "status";
+  status.textContent = "Loading forecast…";
+  try {
+    // query is either a place object (from geolocation) or a text search (zip / city).
+    const place = (query && typeof query === "object" && query.latitude != null)
+      ? query
+      : await resolveLocation(String(query).trim());
+    const { fx } = await getForecast(place);
+    const zip = (place.postcodes || [])[0] || (typeof query === "string" ? query.trim() : "");
+    last.zip = zip; last.place = place; last.fx = fx;
+    status.textContent = "";
+    $("content").style.display = "";
+    render(zip, place, fx);
+  } catch (err) {
+    status.className = "status error";
+    status.textContent = "Couldn't load the forecast: " + err.message;
+  }
+}
+
+$("go").addEventListener("click", () => run($("zip").value));
+$("zip").addEventListener("keydown", e => { if (e.key === "Enter") run($("zip").value); });
+$("pref").addEventListener("change", renderBest);
+$("dayonly").addEventListener("change", renderBest);
+
+const urlParams = new URLSearchParams(window.location.search);
+const urlLoc = urlParams.get("zip") || urlParams.get("loc") || urlParams.get("q") || "";
+
+if (urlLoc.trim()) {
+  $("zip").value = urlLoc.trim();
+  run(urlLoc.trim());
+} else if (navigator.geolocation) {
+  $("status").textContent = "Detecting your location…";
+  navigator.geolocation.getCurrentPosition(async pos => {
+    try {
+      const place = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+      const zip = (place.postcodes || [])[0] || "";
+      if (zip) $("zip").value = zip;
+      run(place);
+    } catch (err) {
+      $("status").textContent = "";
+      $("zip").focus();
+    }
+  }, () => {
+    $("status").textContent = "";
+    $("zip").placeholder = "Enter a ZIP code or city";
+    $("zip").focus();
+  }, { timeout: 8000, maximumAge: 600000 });
+} else {
+  $("zip").focus();
+}
+</script>
+</body>
+</html>
