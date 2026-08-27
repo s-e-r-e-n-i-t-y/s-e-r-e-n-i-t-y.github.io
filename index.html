@@ -181,7 +181,18 @@
       <span id="pages-panel-title">Pages</span>
       <button id="pages-panel-close">✕</button>
     </div>
-    <div id="pages-list">Loading pages...</div>
+    <div id="pages-list">
+      {% assign html_files = site.static_files | where_exp: "f", "f.path contains '.html' and f.path contains '.well-known' == false and f.path != 'index.html' and f.path != '404.html'" %}
+      {% assign html_files = html_files | sort: 'path' %}
+      {% if html_files != empty %}
+        {% for f in html_files %}
+          {% assign label = f.path | split: '/' | last | remove: '.html' %}
+          <a class="page-item" href="{{ '/' | append: f.path | uri_escape }}">{{ label }}</a>
+        {% endfor %}
+      {% else %}
+        <div class="page-item">No pages found.</div>
+      {% endif %}
+    </div>
   </div>
 
   <!-- Minimal inline CSS -->
@@ -309,69 +320,6 @@
       pagesBtn.addEventListener('click', () => pagesPanel.classList.toggle('open'));
       pagesPanelClose.addEventListener('click', () => pagesPanel.classList.remove('open'));
     }
-  </script>
-
-  <!-- Dynamic pages list: fetch HTML files from this public repo via GitHub API -->
-  <script>
-    (async function loadPages() {
-      const owner = 's-e-r-e-n-i-t-y';
-      const repo = 's-e-r-e-n-i-t-y.github.io';
-      const pagesList = document.getElementById('pages-list');
-      if (!pagesList) return;
-
-      // Show loading state
-      pagesList.textContent = 'Loading pages...';
-
-      // Helper to create a link element
-      function makeLink(path) {
-        const a = document.createElement('a');
-        a.className = 'page-item';
-        a.href = encodeURI('/' + path);
-        // Show a nicer label: filename without extension and directory
-        const label = path.replace(/^.*\//, '').replace(/\.html$/i, '');
-        a.textContent = label;
-        a.title = path;
-        return a;
-      }
-
-      try {
-        // Get default branch
-        const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
-        if (!repoRes.ok) throw new Error('Failed to fetch repo info');
-        const repoData = await repoRes.json();
-        const branch = repoData.default_branch || 'main';
-
-        // Fetch tree recursively
-        const treeRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`);
-        if (!treeRes.ok) throw new Error('Failed to fetch repo tree');
-        const treeData = await treeRes.json();
-
-        // Collect .html files (blobs) and filter out the current index and files you may want to hide
-        const htmlFiles = (treeData.tree || [])
-          .filter(item => item.type === 'blob' && item.path.match(/\.html$/i))
-          .map(item => item.path)
-          .filter(path => !path.match(/^\.well-known\//))
-          .filter(path => !path.match(/^index\.html$/i)) // don't list the current index
-          .filter(path => !path.match(/^404\.html$/i));
-
-        // Sort and render
-        htmlFiles.sort((a,b) => a.localeCompare(b, undefined, {sensitivity: 'base'}));
-        pagesList.innerHTML = '';
-        if (htmlFiles.length === 0) {
-          pagesList.textContent = 'No pages found.';
-        } else {
-          htmlFiles.forEach(p => pagesList.appendChild(makeLink(p)));
-        }
-      } catch (err) {
-        console.error('Failed to load pages list from GitHub API', err);
-        // Fallback to a safe static list if API fails (keeps previous entries)
-        const fallback = [
-          'mash.html','music.html','hi.html','hls.html','shader.html','more.html','combined.html','combined_fixed.html','combined (1).html','not_found.html','index-neocities.html','local_shuffle_player (1).html','matrix-standalone.html','mixxy-standalone.html','sample-slicer.html'
-        ];
-        pagesList.innerHTML = '';
-        fallback.forEach(p => pagesList.appendChild(makeLink(p)));
-      }
-    })();
   </script>
 
 </html>
