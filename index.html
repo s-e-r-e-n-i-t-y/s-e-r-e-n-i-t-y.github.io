@@ -203,7 +203,7 @@
     }
     #pages-btn:hover { transform: scale(1.15); }
 
-    /* Pages Panel */
+    /* Pages Panel - mobile/fullscreen by default */
     #pages-panel {
       position: fixed;
       bottom: 0; left: 0;
@@ -218,7 +218,9 @@
       transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
       overflow: hidden;
       transform: translateY(100%);
+      border-radius: 0;
     }
+    /* open state for mobile/fullscreen */
     #pages-panel.open { transform: translateY(0); }
 
     #pages-panel-header {
@@ -249,6 +251,7 @@
     }
     #pages-panel-close:hover { background: rgba(255,255,255,0.15); }
 
+    /* scrollable list area */
     #pages-list {
       flex: 1;
       overflow-y: auto;
@@ -273,6 +276,27 @@
     .page-item:hover {
       background: rgba(255,255,255,0.1);
       color: #667eea;
+    }
+
+    /* Desktop: make panel a centered modal that is not full screen and scrolls internally */
+    @media (min-width: 900px) {
+      #pages-panel {
+        width: min(900px, 95vw);
+        height: 70vh;
+        left: 50%;
+        bottom: 50%;
+        transform: translate(-50%, 100%); /* start off-screen below center */
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+      }
+      /* open state on desktop: bring into center */
+      #pages-panel.open { transform: translate(-50%, 0); }
+
+      /* make header slightly taller for desktop */
+      #pages-panel-header { padding: 18px 22px; }
+
+      /* ensure the list uses the internal height and scrolls */
+      #pages-list { max-height: calc(70vh - 68px); }
     }
   </style>
 </body>
